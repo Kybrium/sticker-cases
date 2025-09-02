@@ -1,0 +1,92 @@
+services:
+
+  # DB SETUP
+  db:
+    image: postgres:16-alpine
+    container_name: sc_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - sc_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # BACKEND SETUP
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sc_backend
+    environment:
+      DB_HOST: db
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_PORT: "5432"
+
+      DJANGO_DEBUG: "True"
+      DJANGO_SECRET_KEY: 'APSOpgoksaflmaskpop"aokf21-0d21sap[OK@fsa.fsa]'
+      DJANGO_HOSTS_URLS: "http://localhost:3000,http://frontend:3000,http://${LAN_IP}:3000"
+      DJANGO_HOSTS: "localhost,127.0.0.1"
+
+      DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME}
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
+
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./backend:/app
+    command: [ "/app/entrypoint.sh" ]
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # FRONTEND SETUP
+  frontend:
+    build:
+      context: ./frontend
+    container_name: sc_frontend
+    environment:
+      NEXT_PUBLIC_API_URL: "http://${LAN_IP:-localhost}:8000"
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: >
+      sh -c "npm install && npm run dev"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  # PGADMIN SETUP
+  pgadmin:
+    image: dpage/pgadmin4:8.13
+    container_name: sc_pgadmin
+    env_file:
+      - .env
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "5050:80"
+    volumes:
+      - sc_pgadmin:/var/lib/pgadmin
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  sc_pgdata:
+  sc_pgadmin:

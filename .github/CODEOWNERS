@@ -1,0 +1,11 @@
+# Global default
+*       @MaxCherya
+
+# Frontend code
+/frontend/    @MaxCherya
+
+# Backend code
+/backend/     @MaxCherya
+
+# GitHub workflow/config files
+.github/      @MaxCherya

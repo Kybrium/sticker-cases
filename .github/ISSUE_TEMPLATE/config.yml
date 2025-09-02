@@ -1,0 +1,15 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: 🔒 Security Issues
+    url: https://github.com/Kybrium/sticker-cases/security/policy
+    about: Please report security vulnerabilities here (see SECURITY.md).
+  - name: 📚 Project Docs
+    url: https://github.com/Kybrium/sticker-cases#-navigation
+    about: Read the setup and usage documentation before opening an issue.
+
+defaults:
+  labels:
+    - needs-triage
+  assignees:
+    - MaxCherya
