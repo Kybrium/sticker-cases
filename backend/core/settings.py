@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "corsheaders",
 
     # Apps
+    "accounts",
 ]
 
 
@@ -127,6 +128,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # ============================ Cors & Rest setups =================================
+SESSION_COOKIE_NAME = "sc_sessionid"
+SESSION_COOKIE_SAMESITE = "Lax"  # or "None" if we use a different site/port and HTTPS
+SESSION_COOKIE_SECURE = False     # True in production (HTTPS)
+CSRF_COOKIE_SECURE = False        # True in production (HTTPS)
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": [
