@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
+import Providers from "./providers";
 
 export const metadata: Metadata = {
   title: "Sticker Cases",
@@ -14,7 +16,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {children}
+        <Providers>{children}</Providers>
+        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="afterInteractive" />
       </body>
     </html>
   );
