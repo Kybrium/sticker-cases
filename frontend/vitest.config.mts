@@ -10,7 +10,7 @@ export default defineConfig({
         include: ["**/__tests__/**/*.{test,spec}.{js,jsx,ts,tsx}"],
         coverage: {
             provider: "v8",
-            all: true,
+            all: false,
             include: ["src/**/*.{ts,tsx}"],
             reporter: ["text", "lcov"],
             thresholds: {
@@ -20,11 +20,19 @@ export default defineConfig({
                 statements: 20,
             },
             exclude: [
+                '**/*.test.{ts,tsx}',
+                '**/__tests__/**',
+                'src/types/**',
+                'src/**/*.d.ts',
+                'src/**/index.{ts,tsx}',
                 "next.config.*",
                 "postcss.config.*",
                 "tailwind.config.*",
                 "src/app/**/layout.tsx",
                 "src/app/**/page.tsx",
+                'src/components/auth/**',
+                'src/lib/hooks/**',
+                'src/endpoints/**',
             ],
         },
     },

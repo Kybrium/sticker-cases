@@ -1,3 +1,16 @@
+declare global {
+    interface Window {
+        Telegram?: { WebApp?: TgWebApp };
+    }
+}
+
+export type TgWebApp = {
+    ready?: () => void;
+    expand?: () => void;
+    initData?: string;
+    initDataUnsafe?: TgInitDataUnsafe;
+};
+
 export type TgUser = {
     id: number;
     is_bot?: boolean;
@@ -27,3 +40,5 @@ export type TelegramLoginResponse = {
         photo_url: string;
     };
 };
+
+export type TgInitDataUnsafe = { user?: TgUser };

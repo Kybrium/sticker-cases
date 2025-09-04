@@ -31,7 +31,7 @@ export default function TelegramUserCard() {
         if (notLoggedIn && !loginMutation.isPending && !loginMutation.isSuccess) {
             loginMutation.mutate(initData);
         }
-    }, [initData, meQuery.isLoading, meQuery.data, loginMutation]);
+    }, [initData, meQuery.isLoading, meQuery.data, loginMutation, tgUser?.is_dev]);
 
     const onLogout = async () => {
         await logout();
@@ -64,14 +64,14 @@ export default function TelegramUserCard() {
 
             <div className="mt-4 flex gap-2">
                 <button
-                    className="px-3 py-1 rounded border"
+                    className="px-3 py-1 rounded border hover:bg-gray-100"
                     onClick={() => initData && loginMutation.mutate(initData)}
                     disabled={!initData || loginMutation.isPending}
                 >
                     Login now
                 </button>
 
-                <button className="px-3 py-1 rounded border" onClick={onLogout}>
+                <button className="px-3 py-1 rounded border hover:bg-gray-100" onClick={onLogout}>
                     Logout
                 </button>
             </div>
