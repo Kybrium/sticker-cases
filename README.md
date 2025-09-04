@@ -9,20 +9,22 @@ A modern sticker platform built with **Next.js + Django + PostgreSQL**, containe
 
 ## 📑 Navigation
 
-1. [Quickstart for any new dev 🚀](#1-quickstart-for-any-new-dev)
-2. [Testing on Local Network (LAN) 🌐](#2-testing-on-local-network-lan)
-3. [Environment files 📄](#3-environment-files)
-4. [First run explained ▶️](#4-first-run-explained)
-5. [Daily Dev Workflow 🔧](#5-daily-dev-workflow)
+1. [Quickstart for any new dev 🚀](#1-quickstart-for-any-new-dev)  
+2. [Testing on Local Network (LAN) 🌐](#2-testing-on-local-network-lan)  
+3. [Environment files 📄](#3-environment-files)  
+4. [First run explained ▶️](#4-first-run-explained)  
+5. [Daily Dev Workflow 🔧](#5-daily-dev-workflow)  
 
-   * [5.1 Common commands 📝](#51-common-commands)
-   * [5.2 Backend (Django) 🐍](#52-backend-django)
-   * [5.3 Frontend (Nextjs) ⚛️](#53-frontend-nextjs)
-   * [5.4 Database (Postgres) 🐘](#54-database-postgres)
-   * [5.5 Database GUI (pgAdmin) 📊](#55-database-gui-pgadmin)
-6. [Common tasks 🔄](#6-common-tasks)
-7. [One-time setup for Windows devs 🪟](#7-one-time-setup-for-windows-devs)
-8. [Repo structure 📂](#8-repo-structure)
+   * [5.1 Common commands 📝](#51-common-commands)  
+   * [5.2 Backend (Django) 🐍](#52-backend-django)  
+   * [5.3 Frontend (Nextjs) ⚛️](#53-frontend-nextjs)  
+   * [5.4 Database (Postgres) 🐘](#54-database-postgres)  
+   * [5.5 Database GUI (pgAdmin) 📊](#55-database-gui-pgadmin)  
+
+6. [Common tasks 🔄](#6-common-tasks)  
+7. [One-time setup for Windows devs 🪟](#7-one-time-setup-for-windows-devs)  
+8. [Repo structure 📂](#8-repo-structure)  
+9. [Known issues & tips ⚠️](#9-known-issues--tips-️)  
 
 ---
 
@@ -324,5 +326,76 @@ sticker-cases/
 ├─ dev.ps1              # shortcuts (Windows PowerShell)
 └─ README.md            # (this file)
 ```
+
+️[⬆️ Back to Navigation](#-navigation)
+
+## 9. Known issues & tips ⚠️
+
+### 9.1 Shell scripts fail with `sh\r`
+
+On Windows, `.sh` files can be saved with **CRLF** endings. Inside Linux containers, this causes:
+
+```
+env: ‘sh\r’: No such file or directory
+```
+
+**Fix:**
+
+* Ensure all `.sh` use **LF** endings.
+* In VS Code: bottom-right → switch `CRLF` → `LF` → save.
+* Or convert in WSL / Git Bash:
+
+  ```bash
+  dos2unix backend/entrypoint.sh
+  ```
+* Enforce in repo with `.gitattributes`:
+
+  ```
+  *.sh text eol=lf
+  *.yml text eol=lf
+  *.py text eol=lf
+  Dockerfile text eol=lf
+  ```
+
+---
+
+### 9.2 Hot reload feels slower in Docker
+
+When running **Next.js** inside Docker Desktop (Windows/macOS), file changes are detected via polling on a virtualized volume. This is \~0.5–2s slower than running `npm run dev` directly.
+
+**Tips:**
+
+* This is **normal** — backend/db stay in Docker, frontend HMR is just slightly delayed.
+* For *instant* updates:
+
+  * Run frontend directly on host:
+
+    ```bash
+    cd frontend
+    npm run dev
+    ```
+  * Or keep project inside **WSL2 filesystem** instead of `C:\Users\...`.
+* You can tune polling in `docker-compose.dev.yml`:
+
+  ```yaml
+  WATCHPACK_POLLING_INTERVAL: "200"
+  CHOKIDAR_INTERVAL: "200"
+  ```
+
+  (lower = faster reload, higher CPU usage)
+
+---
+
+### 9.3 LAN mode & firewalls
+
+When testing on LAN (`make up-lan` / `.\dev.ps1 up-lan`), Windows may block Django/Next.js ports. Allow Docker/Django through the firewall when prompted.
+
+---
+
+### 9.4 Dependency installs
+
+* **Backend:** install inside container → update `requirements.txt` → rebuild image.
+* **Frontend:** install inside container (`npm install <pkg>`) → mounted `node_modules` persists.
+* For faster workflow: run package installs *outside* Docker during development, then rebuild once to sync images.
 
 ️[⬆️ Back to Navigation](#-navigation)
