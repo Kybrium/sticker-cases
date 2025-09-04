@@ -4,12 +4,8 @@
 *4 сентября*
 
 Изменил апку accounts на users. Extend базового юзера.\
-Обновил settings.py, добавил апки и селери cases, packs, users\
-Makemigrations и migrate применять в таком порядке:
-1. Packs
-2. Users
-3. Cases
-4. Джанго модели
+Обновил settings.py, добавил апки и селери cases, packs, users.
+
 
 Добавил роутер для всех апок.\
 Добавил новые зависимости.\
