@@ -1,7 +1,7 @@
 'use client';
 
-import { TgUser } from '@/types/telegram';
 import { useEffect, useState } from 'react';
+import type { TgUser } from '@/types/telegram';
 
 export function useTelegramWebApp() {
     const [inTelegram, setInTelegram] = useState(false);
@@ -9,11 +9,22 @@ export function useTelegramWebApp() {
     const [initData, setInitData] = useState<string | undefined>();
 
     useEffect(() => {
-        const tg = (window as any)?.Telegram?.WebApp;
-        const useMock = process.env.NEXT_PUBLIC_TG_DEV === '1' || new URLSearchParams(window.location.search).has('tgMock');
+        // Guard for SSR and test environments
+        if (typeof window === 'undefined') return;
+
+        const tg = window.Telegram?.WebApp;
+        const qs = typeof window !== 'undefined' ? window.location.search : '';
+        const useMock =
+            process.env.NEXT_PUBLIC_TG_DEV === '1' ||
+            new URLSearchParams(qs).has('tgMock');
 
         if (tg) {
-            try { tg.ready?.(); tg.expand?.(); } catch { }
+            try {
+                tg.ready?.();
+                tg.expand?.();
+            } catch {
+                // no-op
+            }
             setInTelegram(true);
             setUser(tg.initDataUnsafe?.user);
             setInitData(tg.initData);
@@ -28,7 +39,7 @@ export function useTelegramWebApp() {
                 first_name: 'Dev',
                 last_name: 'Tester',
                 language_code: 'en',
-                is_dev: true
+                is_dev: true,
             });
             setInitData('MOCK_INIT_DATA');
         }
