@@ -40,7 +40,9 @@ INSTALLED_APPS = [
     "corsheaders",
 
     # Apps
-    "accounts",
+    "cases",
+    "packs",
+    "users"
 ]
 
 
@@ -114,6 +116,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTH_USER_MODEL = 'users.CustomUser'
 
 # INTERNALIZATION
 LANGUAGE_CODE = 'en-us'
@@ -125,6 +128,9 @@ USE_TZ = True
 # STATIC SETUP
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 
 # ============================ Cors & Rest setups =================================
@@ -143,7 +149,14 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = HOSTS_URLS
 CSRF_TRUSTED_ORIGINS = HOSTS_URLS
 
-
+# TODO: добавить в компоуз сервис broker
+CELERY_BROKER_URL = os.getenv("DJANGO_BROKER_URL", default="redis://localhost:6379/0") # вместо localhost название сервиса
+CELERY_ACCEPT_CONTENT = [
+    "pickle",
+    "application/json",
+]
+CELERY_TASK_SERIALIZER = "pickle"
+CELERY_EVENT_SERIALIZER = "pickle"
 
 
 # ========================= Startup Dashboard (Rich + PyFiglet) =========================

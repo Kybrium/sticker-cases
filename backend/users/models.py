@@ -1,0 +1,66 @@
+from django.db import models
+from enum import StrEnum, auto
+from django.contrib.auth.models import AbstractUser, Group, Permission
+
+
+class UserStatus(StrEnum):
+    ALIVE = auto() # бот доступный юзеру все ок
+    BLOCKED_BOT = auto() # юзер блокнул бота
+    DELETED = auto() # акк юзера удален
+    ADMIN = auto() # если регнулся через админку
+
+
+    @classmethod
+    def choices(cls):
+        results = []
+
+        for element in cls:
+            _element = (element.value, element.name.replace("_", " ").lower().capitalize())
+            results.append(_element)
+
+        return results
+
+
+class CustomUser(AbstractUser):
+    telegram_id = models.BigIntegerField(unique=True, blank=True, null=True)
+    status = models.CharField(max_length=50, choices=UserStatus.choices(), default=UserStatus.ALIVE)
+    language = models.CharField(max_length=10, blank=True, null=True)
+    is_bot = models.BooleanField(default=False)
+    balance = models.DecimalField(max_digits=20, decimal_places=3, default=0, blank=True, null=True)
+    wallet = models.TextField(blank=True, null=True)
+    image_url = models.ImageField(upload_to="users/", default="users/plug.png")
+    groups = models.ManyToManyField(
+        Group, blank=True,
+        related_name='customuser_groups',
+        related_query_name='customuser',
+        verbose_name='groups'
+    )
+    user_permissions = models.ManyToManyField(
+        Permission, blank=True,
+        related_name='customuser_permissions',
+        related_query_name='customuser_perm',
+        verbose_name='user permissions'
+    )
+    def save(self, *args, **kwargs):
+        if self.is_staff or self.is_superuser:
+            self.status = UserStatus.ADMIN
+        super().save(*args, **kwargs)
+
+
+class UserInventory(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    pack = models.ForeignKey("packs.Pack", models.CASCADE)
+
+
+# ДЕПОЗИТЫ И ВЫВОД
+class Deposit(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    sum = models.DecimalField(max_digits=20, decimal_places=3)
+    date = models.DateTimeField()
+    wallet = models.TextField()
+
+
+class Withdrawal(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    sum = models.DecimalField(max_digits=20, decimal_places=3)
+    date = models.DateTimeField()
