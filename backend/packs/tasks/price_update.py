@@ -6,32 +6,70 @@ from urllib.parse import quote
 # логика обновления цен на стикеры, изменение их шансов в кейсах, изменение фи кейса и цены кейса
 # лишний раз сюда не лезть
 
-@celery_app.task(name="packs.tasks.update_packs_prices_sticker_bot_task")
-def update_packs_prices_sticker_bot_task():
-    asyncio.run(update_packs_prices_sticker_bot())
+@celery_app.task(name="backend.packs.tasks.update_sticker_prices_task")
+def update_sticker_prices_task():
+    asyncio.run(update_sticker_prices())
 
-async def update_packs_prices_sticker_bot():
-    """
-    Обновляет цены на стикеры из коллекций выпущенных @sticker_bot
-    :return:
-    """
+
+async def update_sticker_prices():
     async with aiohttp.ClientSession() as client:
         response = await client.get("https://stickers.tools/api/stats-new")
         data = await response.json()
         collections = data.get("collections")
-        response = await client.get("http://localhost:8000/api/packs/contributor/Sticker Pack/")
-        packs = await response.json()
-        pack_names = [p["pack_name"] for p in packs]
 
-        for col_data in collections.values():
-            for pack_data in col_data["stickers"].values():
-                pack_name = pack_data["name"]
-                # TODO: собрать все в один запрос и отправить
-                if pack_name in pack_names:
-                    await client.patch(f"http://localhost:8000/api/packs/{pack_name}/update-floor-price/",
-                                                 json={"floor_price": pack_data["current"]["price"]["floor"]["ton"]})
+        sticker_pack = await update_packs_prices_sticker_bot(collections, client)
 
+        packs_to_update = dict()
+
+        for d in sticker_pack:
+            for collection, packs in d.items():
+                if collection not in packs_to_update:
+                    packs_to_update[collection] = {}
+                packs_to_update[collection].update(packs)
+
+        print(packs_to_update)
+
+        response = await client.patch(f"http://localhost:8000/api/packs/update-stickers-price/",
+                       json={"packs_data": packs_to_update})
+        print(response.status)
+        text = await response.text()
+        print(text)
         await calculate_cases_price()
+
+
+async def update_packs_prices_sticker_bot(collections, client):
+    """
+    Обновляет цены на стикеры из коллекций выпущенных @sticker_bot
+    :return:
+    """
+    response = await client.get("http://localhost:8000/api/packs/contributor/Sticker Pack/")
+    packs = await response.json()
+    print(packs)
+    pack_names = [p["pack_name"] for p in packs]
+    pack_collections = [c["collection_name"] for c in packs]
+
+    packs_to_update = []
+    for col_data in collections.values():
+        for pack_data in col_data["stickers"].values():
+            pack_name = pack_data["name"]
+            collection_name = col_data["name"]
+            if pack_name in pack_names and collection_name in pack_collections:
+                pack_floor_price = pack_data["current"]["price"]["floor"]["ton"]
+                if pack_floor_price:
+                    packs_to_update.append({str(collection_name): {str(pack_name): pack_floor_price}})
+                else:
+                    continue
+    return packs_to_update
+
+
+"""
+Формула фи:
+Для айтема:
+Цена айтема * шанс / 100к
+Фи кейса:
+Цена кейса - Сума айтемов/ цена кейса
+"""
+
 
 async def adjust_case_price(items_dict, base_fee, percent=5):
     EV = sum(v["price"] * v["chance"] for v in items_dict.values())
@@ -49,14 +87,6 @@ async def adjust_case_price(items_dict, base_fee, percent=5):
     # TODO: сделать в будущем чтобы администратор получал понятные логи на изменение цены кейса в админке вручную
     return case_price_new, new_fee
 
-
-"""
-Формула фи:
-Для айтема:
-Цена айтема * шанс / 100к
-Фи кейса:
-Цена кейса - Сума айтемов/ цена кейса
-"""
 
 def _rebalance_probs_greedy(prices, probs, target_ev, min_p, max_p, eps=1e-9):
     """
@@ -219,10 +249,16 @@ async def check_new_fee(new_fee, base_fee=20, percent=5):
 
 async def calculate_cases_price():
     async with aiohttp.ClientSession() as client:
-        # Получаем все кейсы
         response = await client.get("http://localhost:8000/api/cases/")
-        cases = await response.json()
 
+        if response.status == 404:
+            print("Нету доступных кейсов")
+            return
+        if response.status == 500:
+            print("API лег с 500")
+            return
+
+        cases = await response.json()
         for case in cases:
             case_price = float(case.get("price"))
             case_name = case.get("name")
@@ -259,4 +295,4 @@ async def calculate_cases_price():
                 await rebalance_chances(
                     items_dict, case_price, case_base_fee, case_name, client
                 )
-                print(f"{case_name}: фи был невалиден, новые шансы подобраны")
+                print(f"{case_name}: фи был невалиден, новые шансы будут подобраны")

@@ -26,6 +26,9 @@ class Case(models.Model):
     status = models.CharField(max_length=50, choices=CaseStatus.choices(), default=CaseStatus.INACTIVE)
     image_url = models.ImageField(upload_to="cases/", blank=True, null=True)
 
+    def __str__(self):
+        return self.name
+
 
 class CaseItems(models.Model):
     case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name="case_items")

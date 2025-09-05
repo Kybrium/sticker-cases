@@ -46,6 +46,9 @@ class CustomUser(AbstractUser):
             self.status = UserStatus.ADMIN
         super().save(*args, **kwargs)
 
+    def __str__(self):
+        return self.username
+
 
 class UserInventory(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
@@ -59,8 +62,14 @@ class Deposit(models.Model):
     date = models.DateTimeField()
     wallet = models.TextField()
 
+    def __str__(self):
+        return self.user
+
 
 class Withdrawal(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     sum = models.DecimalField(max_digits=20, decimal_places=3)
     date = models.DateTimeField()
+
+    def __str__(self):
+        return self.user

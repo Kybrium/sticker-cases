@@ -25,3 +25,6 @@ class Pack(models.Model):
     status = models.CharField(max_length=50, choices=PackStatus.choices(), default=PackStatus.OUT_OF_STOCK)
     in_stock_count = models.IntegerField(default=0)
     image_url = models.ImageField(upload_to="packs/", blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.pack_name} {self.collection_name}"
