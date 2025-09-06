@@ -1,0 +1,1 @@
+from .price_update import update_sticker_prices_task
