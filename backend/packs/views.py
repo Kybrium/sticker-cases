@@ -28,7 +28,7 @@ class PackAPIViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(all_packs, many=True)
         return Response(serializer.data, status=drf_status.HTTP_200_OK)
 
-    @method_decorator(cache_page(70))
+    # @method_decorator(cache_page(70))
     @action(detail=False, methods=["get"], url_path="contributor/(?P<contributor>[^/.]+)")
     def list_by_contributor(self, request: Request, contributor=None):
         """
@@ -38,7 +38,7 @@ class PackAPIViewSet(viewsets.GenericViewSet):
         serializer = PackSerializer(packs, many=True)
         return Response(serializer.data, status=drf_status.HTTP_200_OK)
 
-    @action(detail=False, methods=["get"], url_path="(?P<collection_name>[^/.]+)/(?P<pack_name>[^/.]+)/")
+    @action(detail=False, methods=["get"], url_path="(?P<collection_name>[^/.]+)/(?P<pack_name>[^/.]+)")
     def get_pack(self, request: Request, pack_name=None, collection_name=None):
         pack = get_object_or_404(Pack, pack_name=pack_name, collection_name=collection_name)
         serializer = PackSerializer(pack)

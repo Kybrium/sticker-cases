@@ -213,7 +213,7 @@ async def rebalance_chances(items, case_price, base_fee, case_name, client_sessi
             # url-encode names
             await client_session.patch(
                 f"http://localhost:8000/api/cases/{quote(case_name)}/update-chance/{quote(n)}/",
-                json={"chance": p_new}
+                json={"chance": p_new, "collection": items[n]["collection_name"]}
             )
     if changed:
         print(f"[rebalance] Шансы сохранены в БД (case={case_name})")

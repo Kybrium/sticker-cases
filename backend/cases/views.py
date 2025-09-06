@@ -38,9 +38,6 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
         return Response(serializer.data, drf_status.HTTP_200_OK)
 
 
-
-
-
     @method_decorator(cache_page(300))
     @action(detail=False, methods=["get"], url_path="(?P<case_name>[^/.]+)")
     def list_case_items(self, request: Request, case_name=None):
@@ -86,9 +83,10 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=["patch"], url_path="(?P<case_name>[^/.]+)/update-chance/(?P<pack_name>[^/.]+)")
     def update_chance(self, request, pack_name=None, case_name=None):
-        pack = get_object_or_404(Pack, pack_name=pack_name)
-        case = get_object_or_404(Case, name=case_name)
+        collection_name = request.data.get("collection")
         new_chance = request.data.get("chance")
+        pack = get_object_or_404(Pack, pack_name=pack_name, collection_name=collection_name)
+        case = get_object_or_404(Case, name=case_name)
         if new_chance is None:
             return Response(
                 {"error": "Поле 'chance' обязательно."},
