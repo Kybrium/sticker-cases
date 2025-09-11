@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     # Apps
     "cases",
     "packs",
-    "users"
+    "users",
+    "payment"
 ]
 
 

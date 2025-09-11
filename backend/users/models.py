@@ -28,6 +28,7 @@ class CustomUser(AbstractUser):
     is_bot = models.BooleanField(default=False)
     balance = models.DecimalField(max_digits=20, decimal_places=3, default=0, blank=True, null=True)
     wallet = models.TextField(blank=True, null=True)
+    wallet_connection = models.DateTimeField(blank=True, null=True)
     image_url = models.ImageField(upload_to="users/", default="users/plug.png")
     groups = models.ManyToManyField(
         Group, blank=True,
@@ -55,21 +56,3 @@ class UserInventory(models.Model):
     pack = models.ForeignKey("packs.Pack", models.CASCADE)
 
 
-# ДЕПОЗИТЫ И ВЫВОД
-class Deposit(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    sum = models.DecimalField(max_digits=20, decimal_places=3)
-    date = models.DateTimeField()
-    wallet = models.TextField()
-
-    def __str__(self):
-        return self.user
-
-
-class Withdrawal(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    sum = models.DecimalField(max_digits=20, decimal_places=3)
-    date = models.DateTimeField()
-
-    def __str__(self):
-        return self.user
