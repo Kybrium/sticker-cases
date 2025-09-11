@@ -160,6 +160,7 @@ CELERY_ACCEPT_CONTENT = [
 CELERY_TASK_SERIALIZER = "pickle"
 CELERY_EVENT_SERIALIZER = "pickle"
 
+APPEND_SLASH=False
 
 # ========================= Startup Dashboard (Rich + PyFiglet) =========================
 if os.environ.get("RUN_MAIN") == "true":

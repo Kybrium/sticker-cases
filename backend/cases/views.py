@@ -4,7 +4,6 @@ from rest_framework import viewsets
 from .models import Case, CaseStatus, CaseItems
 from rest_framework import status as drf_status
 from rest_framework.decorators import action
-from django.shortcuts import get_object_or_404
 from packs.models import Pack
 from packs.serializers import PackSerializer, CaseItemsSerializer
 from .serializers import CaseSerializer
@@ -13,6 +12,7 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from core.celery import celery_app
 from rest_framework.pagination import LimitOffsetPagination
+from django.db import transaction
 
 
 class CaseAPIViewSet(viewsets.GenericViewSet):
@@ -21,6 +21,7 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
 
     def list(self, request: Request) -> Response:
         active_cases = self.get_queryset().filter(status=CaseStatus.ACTIVE)
+        pagination = request.GET.get("pagination")
 
         if not active_cases.exists():
             return Response(
@@ -28,18 +29,74 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
                 status=drf_status.HTTP_404_NOT_FOUND
             )
 
-        paginator = LimitOffsetPagination()
-        page = paginator.paginate_queryset(active_cases, request, view=self)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return paginator.get_paginated_response(serializer.data)
+        if pagination:
+            paginator = LimitOffsetPagination()
+            page = paginator.paginate_queryset(active_cases, request, view=self)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return paginator.get_paginated_response(serializer.data)
 
         serializer = CaseSerializer(active_cases, many=True)
         return Response(serializer.data, drf_status.HTTP_200_OK)
 
 
+    @action(detail=False, methods=["patch"], url_path="update-chances")
+    def update_chances(self, request: Request):
+        print("До получения даты в update_chances")
+        data = request.data.get("data")
+        print("После получения даты в update_chances", data)
+        chances_to_update = []
+        try:
+            with transaction.atomic():
+                for case, pack_data in data.items():
+                    print(case, pack_data)
+                    for pack_info in pack_data:
+                        try:
+                            pack = Pack.objects.get(pack_name=pack_info["pack_name"], collection_name=pack_info["collection_name"])
+                            obj = CaseItems.objects.get(pack=pack)
+                            obj.chance = pack_info["chance"]
+                            chances_to_update.append(obj)
+                        except [Pack.DoesNotExist, CaseItems.DoesNotExist]:
+                            continue
+                if chances_to_update:
+                    CaseItems.objects.bulk_update(chances_to_update, ["chance"])
+        except Exception as e:
+            return Response(
+                {"detail": f"Ошибка обновления: {str(e)}"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response({"info": len(chances_to_update)}, status=drf_status.HTTP_200_OK)
+
+    @action(detail=False, methods=["patch"], url_path="update-cases")
+    def update_cases(self, request: Request):
+        print("До получения данных в update_cases")
+        data = request.data.get("data")
+        print("После получения данных в update_cases", data)
+        cases_to_update = []
+        try:
+            with transaction.atomic():
+                for case_name, value in data.items():
+                    try:
+                        obj = Case.objects.get(name=case_name)
+                        obj.current_fee = value.get("fee", obj.current_fee)
+                        obj.price = value.get("price", obj.price)
+                        cases_to_update.append(obj)
+                    except Case.DoesNotExist:
+                        continue
+                if cases_to_update:
+                    Case.objects.bulk_update(cases_to_update, ["current_fee", "price"])
+        except Exception as e:
+            return Response(
+                {"detail": f"Ошибка обновления: {str(e)}"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response({"info": len(cases_to_update)}, status=drf_status.HTTP_200_OK)
+
+
     @method_decorator(cache_page(300))
-    @action(detail=False, methods=["get"], url_path="(?P<case_name>[^/.]+)")
+    @action(detail=False, methods=["get"], url_path="case/(?P<case_name>[^/.]+)")
     def list_case_items(self, request: Request, case_name=None):
         try:
             case = Case.objects.get(name=case_name)
@@ -51,7 +108,7 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
         return Response(serializer.data, status=drf_status.HTTP_200_OK)
 
 
-    @action(detail=False, methods=["get"], url_path="(?P<case_name>[^/.]+)/demo-open")
+    @action(detail=False, methods=["get"], url_path="case/(?P<case_name>[^/.]+)/demo-open")
     def demo_open_case(self, request, case_name=None):
         """
         октрытие кейса в демо режиме. Данные никуда не записываются, токен не нужен
@@ -80,87 +137,3 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
         return Response({
             "pack": serializer.data,
         }, status=drf_status.HTTP_200_OK)
-
-    @action(detail=False, methods=["patch"], url_path="(?P<case_name>[^/.]+)/update-chance/(?P<pack_name>[^/.]+)")
-    def update_chance(self, request, pack_name=None, case_name=None):
-        collection_name = request.data.get("collection")
-        new_chance = request.data.get("chance")
-        pack = get_object_or_404(Pack, pack_name=pack_name, collection_name=collection_name)
-        case = get_object_or_404(Case, name=case_name)
-        if new_chance is None:
-            return Response(
-                {"error": "Поле 'chance' обязательно."},
-                status=drf_status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            new_chance = float(new_chance)
-        except ValueError:
-            return Response(
-                {"error": "chance должно быть числом."},
-                status=drf_status.HTTP_400_BAD_REQUEST
-            )
-
-        case_item = get_object_or_404(CaseItems, case=case, pack=pack)
-        case_item.chance = new_chance
-        case_item.save()
-
-        return Response(
-            {"message": f"Шанс для стикерпака {pack.pack_name} в кейсе {case.name} обновлен на {new_chance}.", "chance": new_chance},
-            status=drf_status.HTTP_200_OK
-        )
-
-
-    @action(detail=False, methods=["patch"], url_path="(?P<case_name>[^/.]+)/update-current-fee")
-    def update_current_case_fee(self, request, case_name=None):
-        case = get_object_or_404(Case, name=case_name)
-        new_fee = request.data.get("fee")
-        if new_fee is None:
-            return Response(
-                {"error": "Поле 'fee' обязательно."},
-                status=drf_status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            new_fee = float(new_fee)  # или Decimal(new_chance)
-        except ValueError:
-            return Response(
-                {"error": "Fee должно быть числом."},
-                status=drf_status.HTTP_400_BAD_REQUEST
-            )
-
-        case = get_object_or_404(Case, name=case_name)
-        case.current_fee = new_fee
-        case.save()
-
-        return Response(
-            {"message": f"Текущее fee для кейса {case.name} обновлено на {new_fee}."},
-            status=drf_status.HTTP_200_OK
-        )
-
-    @action(detail=False, methods=["patch"], url_path="(?P<case_name>[^/.]+)/update-price")
-    def update_case_price(self, request: Request, case_name=None):
-        case = get_object_or_404(Case, name=case_name)
-        new_price = request.data.get("price")
-        if new_price is None:
-            return Response(
-                {"error": "Поле 'price' обязательно."},
-                status=drf_status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            new_price = float(new_price)
-        except ValueError:
-            return Response(
-                {"error": "Price должно быть числом."},
-                status=drf_status.HTTP_400_BAD_REQUEST
-            )
-
-        case = get_object_or_404(Case, name=case_name)
-        case.price = new_price
-        case.save()
-
-        return Response(
-            {"message": f"Текущая цена для кейса {case.name} обновлена на {new_price}."},
-            status=drf_status.HTTP_200_OK
-        )

@@ -4,6 +4,38 @@
 **1. GET /api/cases/** \
 ***Response:***
 ````
+[
+  {
+    "name": "DOGS OG Case",
+    "price": "3.500",
+    "image_url": null,
+    "base_fee": 20.0
+  },
+  {
+    "name": "DOGS Rewards Case",
+    "price": "2844.500",
+    "image_url": null,
+    "base_fee": 20.0
+  },
+  {
+    "name": "Blum Case",
+    "price": "1.500",
+    "image_url": null,
+    "base_fee": 20.0
+  }
+]
+````
+
+Возвращает кейсы со статусом ACTIVE: \
+- `name` название кейса
+- `price` цена кейса
+- `image_url` фоточка для фронтенда
+- `base_fee` фи кейса на которую равняется `current_fee`, можно и ее  в сериализаторе указать
+
+Пагинация возвращает по 2 объекта на раз. \
+
+Если добавить параметр ?pagination=true, то вернет с пагинацией:
+````
 { 
   "count": 3, 
   "next": "http://127.0.0.1:8000/api/cases/?limit=2&offset=2", 
@@ -25,17 +57,7 @@
 } 
 ````
 
-Возвращает кейсы со статусом ACTIVE: \
-- `name` название кейса
-- `price` цена кейса
-- `image_url` фоточка для фронтенда
-- `base_fee` фи кейса на которую равняется `current_fee`, можно и ее  в сериализаторе указать
-
-Пагинация возвращает по 2 объекта на раз. \
-
-**Этот эндпоинт чисто для фронтенда! Нужно реализовать похожий метод но без пагинации для price_update.py!**
-
-2. **GET /api/cases/Blum Case/** \
+2. **GET /api/cases/case/Blum Case/** \
 ***Response:***
 ````
 [
@@ -69,7 +91,7 @@
 - `case_name` имя кейса
 - `pack_floor_price` цена пака глобально
 
-3. **GET /api/cases/Blum Case/demo-open**
+3. **GET /api/cases/case/Blum Case/demo-open**
 ***Response:***
 ````
 {
@@ -93,59 +115,59 @@
 - `in_stock_count` сколько закуплено паков для ликвидности 
 - "image_url" фотка пака
 
-4. **PATCH /api/cases/Blum Case/update-chance/Cook/** \
+4. **PATCH /api/cases/update-chances/** \
 ***Request:***
 ````
-{"chance": 0.2, "collection": "Blum"}
+{
+  "data": {
+    "DOGS OG Case": [
+      {"pack_name": "Cook", "collection_name": "DOGS OG", "chance": 0.047814798788403286},
+      {"pack_name": "Teletubby", "collection_name": "DOGS OG", "chance": 0.9043704024231934},
+      {"pack_name": "Pilot", "collection_name": "DOGS OG", "chance": 0.047814798788403286}
+    ]
+  }
+}
 ````
 ***Response:***
 ````
 {
-  "message": "Шанс для стикерпака Cook в кейсе Blum Case обновлен на 0.2.",
-  "chance": 0.2
+  "info": 3
 }
 ````
 
 Обновляет шанс на выпадение пака в определенном кейсе:
 - `chance` новый шанс на выпадение
-- `collection` коллекция стикерпака
+- `collection_name` коллекция стикерпака
 
 Эндпоинт используется только в логике с price_update
 
-5. **PATCH /api/cases/Blum Case/update-current-fee/** \
+5. **PATCH /api/cases/update-cases/** \
 ***Request:***
 ````
-{"fee": 20}
+{
+  "data": {
+    "Blum Case": 
+      {"fee": 20.852280967709124}
+    ,
+    "DOGS OG Case": 
+      {"price": 3.0, "fee": 19.999999999999986}
+    ,
+    "DOGS Rewards Case": 
+      {"fee": 19.800141337436568}
+    
+  }
+}
 ````
 ***Response:***
 ````
 {
-  "message": "Текущее fee для кейса Blum Case обновлено на 20.0."
+  "info": 3
 }
 ````
 
-Обновляет текущий фи кейса: \
-- `fee` текущий фи кейса
+Обновляет текущий фи и цену кейсов. \
 
 Используется только внутри логики price_update
-
-6. **PATCH /api/cases/Blum Case/update-price/** \
-***Request:***
-````
-{"price": 1.5}
-````
-***Response:***
-````
-{
-  "message": "Текущая цена для кейса Blum Case обновлена на 1.5."
-}
-````
-
-Обновляет цену кейса: \
-- `price` цена кейса
-
-Используется только внутри логики price_update
-
 ****
 ### packs
 
@@ -190,8 +212,7 @@
 - `in_stock_count` сколько закуплено для ликвидности кейсов
 - 'image_url' фотка
 
-2. **GET /api/packs/contributor/Sticker Pack/** \
-Странная вьюха, в моменте перестала работать. **Надо пофиксить** \
+2. **GET /api/packs/contributor/?contributor=Sticker Pack** \
 ***Response:***
 ````
 [
@@ -257,6 +278,6 @@
 ****
 ### users
 
-хз че там вьюхи делают, переделать
+
 
 ****

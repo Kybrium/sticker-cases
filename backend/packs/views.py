@@ -11,7 +11,6 @@ from django.utils.decorators import method_decorator
 from django.db import transaction
 
 
-
 class PackAPIViewSet(viewsets.GenericViewSet):
     queryset = Pack.objects.all()
     serializer_class = PackSerializer
@@ -28,21 +27,24 @@ class PackAPIViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(all_packs, many=True)
         return Response(serializer.data, status=drf_status.HTTP_200_OK)
 
-    # @method_decorator(cache_page(70))
-    @action(detail=False, methods=["get"], url_path="contributor/(?P<contributor>[^/.]+)")
-    def list_by_contributor(self, request: Request, contributor=None):
-        """
-        контрибьютор это стикер пак, fuse, зеленый слон маркет и прочее
-        """
+    @method_decorator(cache_page(70))
+    @action(detail=False, methods=["get"], url_path="contributor")
+    def list_by_contributor(self, request: Request):
+        contributor = request.GET.get("contributor")
+        if not contributor:
+            return Response({"error": "URL param 'contributor' is required"})
+
         packs = Pack.objects.filter(contributor=contributor)
         serializer = PackSerializer(packs, many=True)
         return Response(serializer.data, status=drf_status.HTTP_200_OK)
+
 
     @action(detail=False, methods=["get"], url_path="(?P<collection_name>[^/.]+)/(?P<pack_name>[^/.]+)")
     def get_pack(self, request: Request, pack_name=None, collection_name=None):
         pack = get_object_or_404(Pack, pack_name=pack_name, collection_name=collection_name)
         serializer = PackSerializer(pack)
         return Response(serializer.data, status=drf_status.HTTP_200_OK)
+
 
     @action(detail=False, methods=["patch"], url_path="update-stickers-price")
     def update_stickers_price(self, request: Request):
@@ -51,7 +53,6 @@ class PackAPIViewSet(viewsets.GenericViewSet):
         try:
             with transaction.atomic():
                 for collection, pack in data.items():
-                    print(collection, pack)
                     for pack_name, price in pack.items():
                         try:
                             obj = Pack.objects.get(
