@@ -277,7 +277,48 @@
 
 ****
 ### users
+****
+### wallet
 
+1. POST /api/wallet/get-nonce/
+***Request:***
+````
+{"telegram_id": 213113123}
+````
+***Response:***
+````
+{
+  "nonce": "A9cPYa107z5SjmHFwgc01jvcUi34Mg3s"
+}
+````
+Получает серверный nonce для формирования message и подписи на сервере для подтверждения что юзер владеет кошем. Для одного юзера нельзя создать несколько nonce одновременно. Работает только если юзер уже есть в бд.
 
+2. POST /api/wallet/connect-wallet/
+***Request:***
+````
+{
+  "signature": "Wm6MjqZRJ/kubFN2646dMswslHDfBOYX/ROCNeu3BKuPC9aGFmF6L7fnoF8FFVGG3jXDnPRCwEt+JztPpri+Ag==",
+  "message": "wallet=v-syrom-formate-kosh&telegram_id=213123123&timestamp=1600002213&nonce=e4w101gYi1f-baoB07HqkoYiHi6Mc58K",
+  "public": "FrVLJTyLUYvDGp01ek0OWnMK82+9Ti4RChebSj8E+WE="
+}
+````
+***Response:***
+````
+{
+    "message": "Wallet connected successfully"
+}
+````
+Сверяет подпись и сообщение. Одноразовое использование. Работает только с nonce который сгенерировал сервер. В message передается кош, телеграм айди, когда был подключен кош и nonce. Кош и подключение записывается в бд при 200 статусе.
+****
+### Дополнительно
+GET /tonconnect-manifest.json/
+***Response***
+````
+{
+  "url": "http://localhost:8080",
+  "name": "TON Connect Demo"
+}
+````
+Необходим для корректной работы ton connect на клиенте
 
 ****

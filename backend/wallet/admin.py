@@ -1,5 +1,5 @@
 from django.contrib import admin
-from payment.models import Deposit, Withdrawal
+from .models import Deposit, Withdrawal
 
 @admin.register(Deposit)
 class DepositAdmin(admin.ModelAdmin):
