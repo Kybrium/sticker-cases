@@ -2,6 +2,8 @@ import asyncio
 import aiohttp
 from core.celery import celery_app
 
+BASE_URL = "http://localhost:8000"
+
 @celery_app.task(name="backend.packs.tasks.update_sticker_prices_task")
 def update_sticker_prices_task():
     asyncio.run(update_sticker_prices())
@@ -23,7 +25,7 @@ async def update_sticker_prices():
                     packs_to_update[collection] = {}
                 packs_to_update[collection].update(packs)
 
-        await client.patch(f"http://localhost:8000/api/packs/update-stickers-price/",
+        await client.patch(f"{BASE_URL}/api/packs/update-stickers-price/",
                        json={"packs_data": packs_to_update})
         await calculate_cases_price()
 
@@ -33,7 +35,7 @@ async def update_packs_prices_sticker_bot(collections, client):
     Обновляет цены на стикеры из коллекций выпущенных @sticker_bot
     :return:
     """
-    response = await client.get("http://127.0.0.1:8000/api/packs/contributor/?contributor=Sticker Pack")
+    response = await client.get(f"{BASE_URL}/api/packs/contributor/?contributor=Sticker Pack")
     packs = await response.json()
     pack_names = [p["pack_name"] for p in packs]
     pack_collections = [c["collection_name"] for c in packs]
@@ -74,7 +76,6 @@ async def adjust_case_price(items_dict, base_fee, percent=5):
 
     new_fee = (case_price_new - EV) / case_price_new * 100
 
-    # TODO: сделать в будущем чтобы администратор получал понятные логи на изменение цены кейса в админке вручную
     return case_price_new, new_fee
 
 
@@ -145,7 +146,7 @@ def _rebalance_probs_greedy(prices, probs, target_ev, min_p, max_p, eps=1e-9):
     return p, ev
 
 
-async def rebalance_chances(items, case_price, base_fee, case_name, client_session, percent=5, max_iter=100):
+async def rebalance_chances(items, case_price, base_fee, case_name, percent=5, max_iter=100):
     """
     Распределение шансов с категориями и контролем EV/фи.
     Поддерживаются несколько cheap и expensive паков.
@@ -198,7 +199,6 @@ async def rebalance_chances(items, case_price, base_fee, case_name, client_sessi
         total = sum(p)
         return [x / total for x in p]
 
-    # --- Greedy-подстройка для EV ---
     def greedy_adjust(prices, chances, categories, CATEGORY, target_ev, eps=1e-9, max_iter=100, max_delta=0.05):
         p = chances[:]
         n = len(p)
@@ -284,7 +284,7 @@ async def check_new_fee(new_fee, base_fee=20, percent=5):
 
 async def calculate_cases_price():
     async with aiohttp.ClientSession() as client:
-        response = await client.get("http://localhost:8000/api/cases/")
+        response = await client.get(f"{BASE_URL}/api/cases/")
 
         if response.status == 404:
             print("Нету доступных кейсов")
@@ -303,7 +303,7 @@ async def calculate_cases_price():
             case_name = case.get("name")
             case_base_fee = float(case.get("base_fee"))
 
-            response = await client.get(f"http://localhost:8000/api/cases/case/{case_name}/")
+            response = await client.get(f"{BASE_URL}/api/cases/case/{case_name}/")
             items = await response.json()
 
             items_dict = {
@@ -325,7 +325,7 @@ async def calculate_cases_price():
                 cases_to_update[case_name] = {"fee": current_fee}
             else:
                 chance_updates, case_updates = await rebalance_chances(
-                    items_dict, case_price, case_base_fee, case_name, client
+                    items_dict, case_price, case_base_fee, case_name
                 )
 
                 chances_to_update.update(chance_updates)
@@ -333,5 +333,5 @@ async def calculate_cases_price():
 
                 print(f"{case_name}: фи был невалиден, новые шансы будут подобраны")
 
-        await client.patch(f"http://localhost:8000/api/cases/update-cases/", json={"data": cases_to_update})
-        await client.patch(f"http://localhost:8000/api/cases/update-chances/", json={"data": chances_to_update})
+        await client.patch(f"{BASE_URL}/api/cases/update-cases/", json={"data": cases_to_update})
+        await client.patch(f"{BASE_URL}/api/cases/update-chances/", json={"data": chances_to_update})

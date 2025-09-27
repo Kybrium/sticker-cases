@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     # Apps
     "cases",
     "packs",
-    "users"
+    "users",
+    "wallet"
 ]
 
 
@@ -161,6 +162,16 @@ CELERY_TASK_SERIALIZER = "pickle"
 CELERY_EVENT_SERIALIZER = "pickle"
 
 APPEND_SLASH=False
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/0",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
 
 # ========================= Startup Dashboard (Rich + PyFiglet) =========================
 if os.environ.get("RUN_MAIN") == "true":
