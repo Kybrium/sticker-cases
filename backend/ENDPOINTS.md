@@ -1,8 +1,10 @@
 ****
+
 ### cases
 
 **1. GET /api/cases/** \
 ***Response:***
+
 ````
 [
   {
@@ -27,14 +29,16 @@
 ````
 
 Возвращает кейсы со статусом ACTIVE: \
+
 - `name` название кейса
 - `price` цена кейса
 - `image_url` фоточка для фронтенда
-- `base_fee` фи кейса на которую равняется `current_fee`, можно и ее  в сериализаторе указать
+- `base_fee` фи кейса на которую равняется `current_fee`, можно и ее в сериализаторе указать
 
 Пагинация возвращает по 2 объекта на раз. \
 
 Если добавить параметр ?pagination=true, то вернет с пагинацией:
+
 ````
 { 
   "count": 3, 
@@ -58,7 +62,8 @@
 ````
 
 2. **GET /api/cases/case/Blum Case/** \
-***Response:***
+   ***Response:***
+
 ````
 [
   {
@@ -84,7 +89,9 @@
   }
 ]
 ````
+
 Возвращает стикерпаки которые связаны с кейсом (например Blum Case) через CaseItems: \
+
 - `pack_name` название пака
 - `pack_image` для фронта
 - `chance` шанс на выпадение пака именно в этом кейсе
@@ -92,7 +99,8 @@
 - `pack_floor_price` цена пака глобально
 
 3. **GET /api/cases/case/Blum Case/demo-open**
-***Response:***
+   ***Response:***
+
 ````
 {
   "pack": {
@@ -106,17 +114,20 @@
   }
 }
 ````
+
 Позволяет открыть кейс в демо режиме. Никаких записей в бд нету:
+
 - `pack_name` имя пака
 - `collection_name` название коллекции
 - `contributor` тот кто выпустил пак
 - `floor_price` цена пака
 - `status` статус пака
-- `in_stock_count` сколько закуплено паков для ликвидности 
+- `in_stock_count` сколько закуплено паков для ликвидности
 - "image_url" фотка пака
 
 4. **PATCH /api/cases/update-chances/** \
-***Request:***
+   ***Request:***
+
 ````
 {
   "data": {
@@ -128,7 +139,9 @@
   }
 }
 ````
+
 ***Response:***
+
 ````
 {
   "info": 3
@@ -136,13 +149,15 @@
 ````
 
 Обновляет шанс на выпадение пака в определенном кейсе:
+
 - `chance` новый шанс на выпадение
 - `collection_name` коллекция стикерпака
 
 Эндпоинт используется только в логике с price_update
 
 5. **PATCH /api/cases/update-cases/** \
-***Request:***
+   ***Request:***
+
 ````
 {
   "data": {
@@ -158,7 +173,9 @@
   }
 }
 ````
+
 ***Response:***
+
 ````
 {
   "info": 3
@@ -169,10 +186,12 @@
 
 Используется только внутри логики price_update
 ****
+
 ### packs
 
 1. **GET /api/packs/** \
-***Response:***
+   ***Response:***
+
 ````
 [
   {
@@ -203,7 +222,9 @@
     "image_url": null
   }]
 ```` 
+
 Возвращает стикерпаки: \
+
 - `pack_name` название пака
 - `collection_name` название коллекции пака
 - `contributor` тот кто выпустил пак
@@ -213,7 +234,8 @@
 - 'image_url' фотка
 
 2. **GET /api/packs/contributor/?contributor=Sticker Pack** \
-***Response:***
+   ***Response:***
+
 ````
 [
   {
@@ -244,11 +266,13 @@
     "image_url": null
   }]
 ````
+
 Фильтрует все паки по контрибьютору, например Sticker Pack \
 Подключен кэш
 
 3. **GET /api/packs/DOGS OG/Pilot/** \
-***Response***
+   ***Response***
+
 ````
 {
   "pack_name": "Pilot",
@@ -260,41 +284,55 @@
   "image_url": null
 }
 ````
+
 Возвращает стикерпак по его названию и коллекции
 
 4. **PATCH /api/packs/update-stickers-price/**
-***Request:***
+   ***Request:***
+
 ````
 {"packs_data": {"DOGS OG": {"Cook": 5.969}}}
 ````
+
 ***Response:***
+
 ````
 {
   "info": 1
 }
 ````
+
 Обновляет цены на стикеры
 
 ****
+
 ### users
+
 ****
+
 ### wallet
 
 1. POST /api/wallet/get-nonce/
-***Request:***
+   ***Request:***
+
 ````
 {"telegram_id": 213113123}
 ````
+
 ***Response:***
+
 ````
 {
   "nonce": "A9cPYa107z5SjmHFwgc01jvcUi34Mg3s"
 }
 ````
-Получает серверный nonce для формирования message и подписи на сервере для подтверждения что юзер владеет кошем. Для одного юзера нельзя создать несколько nonce одновременно. Работает только если юзер уже есть в бд.
+
+Получает серверный nonce для формирования message и подписи на сервере для подтверждения что юзер владеет кошем. Для
+одного юзера нельзя создать несколько nonce одновременно. Работает только если юзер уже есть в бд.
 
 2. POST /api/wallet/connect-wallet/
-***Request:***
+   ***Request:***
+
 ````
 {
   "signature": "Wm6MjqZRJ/kubFN2646dMswslHDfBOYX/ROCNeu3BKuPC9aGFmF6L7fnoF8FFVGG3jXDnPRCwEt+JztPpri+Ag==",
@@ -302,23 +340,100 @@
   "public": "FrVLJTyLUYvDGp01ek0OWnMK82+9Ti4RChebSj8E+WE="
 }
 ````
+
 ***Response:***
+
 ````
 {
     "message": "Wallet connected successfully"
 }
+
+
 ````
-Сверяет подпись и сообщение. Одноразовое использование. Работает только с nonce который сгенерировал сервер. В message передается кош, телеграм айди, когда был подключен кош и nonce. Кош и подключение записывается в бд при 200 статусе.
-****
-### Дополнительно
-GET /tonconnect-manifest.json/
+
+Сверяет подпись и сообщение. Одноразовое использование. Работает только с nonce который сгенерировал сервер. В message
+передается кош, телеграм айди, когда был подключен кош и nonce. Кош и подключение записывается в бд при 200 статусе.
+
+3. POST /api/wallet/create-invoice
+
+***Request***
+
+````
+{"telegram_id": "321321"}
+````
+
 ***Response***
+
+````
+{"message": "Invoice created", 
+"address_to_pay": address, 
+"invoice_id": invoice_id
+}
+````
+
+`address_to_pay` - возращает адрес на который нужно депнуть в красивом формате\
+`invoice_id` - его нужно указать в комментарии при депе
+
+Создание инвойса для оплаты пользователем. На одного пользователя может быть максимум один инвойс. Вызывается при
+нажатии кнопки "пополнить". Инвойс живет сутки. Не фиксированная сумма депа
+
+4. POST /api/wallet/check-deposit
+
+***Request:***
+
+````
+{"telegram_id": "321321"}
+````
+
+***Response:***
+
+````
+{
+"message": "Invoice is paid",
+"status": InvoiceStatus.PAID, 
+"new_balance": balance
+}
+````
+
+Срабатывает после того как пользователь нажимает кнопку "я депнул" или что то в этом духе. Если инвойс оплачен,
+возвращает 200 и новый баланс. Чистится кэш и пользователь может снова создавать инвойс. Этот этап не скипаем. На
+будущее, в случае если пользователь не нажал на кнопку, нужно будет все равно очистить кэш (придумаю на каком этапе). Во
+всех остальных случаях вернет 400.
+****
+
+### Вебхуки и дополнительное
+
+1. GET /tonconnect-manifest.json/
+   ***Response:***
+
 ````
 {
   "url": "http://localhost:8080",
   "name": "TON Connect Demo"
 }
 ````
+
 Необходим для корректной работы ton connect на клиенте
 
+2. POST webhook/tonconsole/uuid
+
+***Request:***
+
+````
+{
+  "id": "string",
+  "status": "pending | paid | cancelled | expired",
+  "amount": "string",
+  "description": "string",
+  "date_create": 1234567890,
+  "date_expire": 1234567890,
+  "date_change": 1234567890,
+  "payment_link": "string",
+  "pay_to_address": "0:<hash>",
+  "paid_by_address": "0:<hash>",
+  "overpayment": "string"
+}
+````
+
+Вебхук для получения статусов инвойсов от TonConsole.
 ****

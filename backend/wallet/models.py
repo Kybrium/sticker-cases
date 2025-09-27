@@ -9,7 +9,7 @@ class Deposit(models.Model):
     wallet = models.TextField()
 
     def __str__(self):
-        return self.user
+        return f"{self.wallet} {self.date}"
 
 
 class Withdrawal(models.Model):
@@ -18,4 +18,5 @@ class Withdrawal(models.Model):
     date = models.DateTimeField()
 
     def __str__(self):
-        return self.user
+        return f"{self.pack} {self.date}"
+

@@ -1,29 +1,29 @@
 import json
-from django.core.cache import cache
+from django_redis import get_redis_connection
 
 class CacheService:
-
     @staticmethod
     def set(key: str, value: dict, ttl: int | None = None):
-        cache.set(key, json.dumps(value), timeout=ttl)
+        redis_conn = get_redis_connection("default")
+        serialized_value = json.dumps(value)
+        if ttl is not None:
+            redis_conn.setex(key, ttl, serialized_value)
+        else:
+            redis_conn.set(key, serialized_value)
 
     @staticmethod
     def get(key: str):
-        result = cache.get(key)
-        return json.loads(result) if result else None
+        redis_conn = get_redis_connection("default")
+        value = redis_conn.get(key)
+        return json.loads(value) if value else None
 
     @staticmethod
     def delete(key: str):
-        cache.delete(key)
+        redis_conn = get_redis_connection("default")
+        redis_conn.delete(key)
 
     @staticmethod
-    def is_active_key(telegram_id: str) -> bool:
-        active_nonces = cache.get(f"active_nonces:{telegram_id}") or []
-        return bool(active_nonces)
-
-    @staticmethod
-    def add_active_nonce(telegram_id: str, nonce: str):
-        key = f"active_nonces:{telegram_id}"
-        active_nonces = cache.get(key) or []
-        active_nonces.append(nonce)
-        cache.set(key, active_nonces, timeout=300)
+    def get_ttl(key: str) -> int | None:
+        redis_conn = get_redis_connection("default")
+        ttl = redis_conn.ttl(key)
+        return ttl if ttl >= 0 else None
