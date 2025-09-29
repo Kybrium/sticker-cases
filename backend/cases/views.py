@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
-from .models import Case, CaseStatus, CaseItems
+from .models import Case, CaseStatus, CaseItems, CaseOpen
 from rest_framework import status as drf_status
 from rest_framework.decorators import action
 from packs.models import Pack
@@ -13,6 +13,29 @@ from django.utils.decorators import method_decorator
 from core.celery import celery_app
 from rest_framework.pagination import LimitOffsetPagination
 from django.db import transaction
+from users.models import CustomUser, UserInventory
+from django.utils import timezone
+from django.shortcuts import get_object_or_404
+
+
+def open_case(case: Case):
+    case_packs = CaseItems.objects.filter(case=case)
+    if not case_packs.exists():
+        return {"error": "Стикеры в кейсе отсутствуют"}, 400
+
+    rand_value = random.random()
+    cumulative = 0
+    for cp in case_packs:
+        cumulative += cp.chance
+        if rand_value <= cumulative:
+            selected_pack = cp.pack
+            break
+    else:
+        selected_pack = case_packs.last().pack
+
+    serializer = PackSerializer(selected_pack)
+
+    return {"serialized_pack": serializer.data, "raw_pack": selected_pack}, 200
 
 
 class CaseAPIViewSet(viewsets.GenericViewSet):
@@ -39,7 +62,6 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
         serializer = CaseSerializer(active_cases, many=True)
         return Response(serializer.data, drf_status.HTTP_200_OK)
 
-
     @action(detail=False, methods=["patch"], url_path="update-chances")
     def update_chances(self, request: Request):
         print("До получения даты в update_chances")
@@ -52,7 +74,8 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
                     print(case, pack_data)
                     for pack_info in pack_data:
                         try:
-                            pack = Pack.objects.get(pack_name=pack_info["pack_name"], collection_name=pack_info["collection_name"])
+                            pack = Pack.objects.get(pack_name=pack_info["pack_name"],
+                                                    collection_name=pack_info["collection_name"])
                             obj = CaseItems.objects.get(pack=pack)
                             obj.chance = pack_info["chance"]
                             chances_to_update.append(obj)
@@ -94,7 +117,6 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
 
         return Response({"info": len(cases_to_update)}, status=drf_status.HTTP_200_OK)
 
-
     @method_decorator(cache_page(300))
     @action(detail=False, methods=["get"], url_path="case/(?P<case_name>[^/.]+)")
     def list_case_items(self, request: Request, case_name=None):
@@ -107,33 +129,37 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
         serializer = CaseItemsSerializer(case_items, many=True)
         return Response(serializer.data, status=drf_status.HTTP_200_OK)
 
+    @action(detail=False, methods=["POST", "GET"], url_path="case/(?P<case_name>[^/.]+)/open")
+    def open_case_view(self, request, case_name=None):
+        telegram_id = request.data.get("telegram_id")
 
-    @action(detail=False, methods=["get"], url_path="case/(?P<case_name>[^/.]+)/demo-open")
-    def demo_open_case(self, request, case_name=None):
-        """
-        октрытие кейса в демо режиме. Данные никуда не записываются, токен не нужен
-        """
         try:
             case = Case.objects.get(name=case_name)
         except Case.DoesNotExist:
-            return Response({"error": "Кейс не найден"}, status=drf_status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Кейс не найден"}, status=400)
 
-        case_packs = CaseItems.objects.filter(case=case)
-        if not case_packs.exists():
-            return Response({"error": "Пакеты в кейсе отсутствуют"}, status=drf_status.HTTP_404_NOT_FOUND)
+        user = None
+        if telegram_id:
+            user = get_object_or_404(CustomUser, telegram_id=telegram_id)
+            if case.price > user.balance:
+                return Response(
+                    {"error": "Не достаточно денег на балансе", "case_price": case.price, "user_balance": user.balance},
+                    status=400
+                )
 
-        rand_value = random.random()
-        cumulative = 0
-        for cp in case_packs:
-            cumulative += cp.chance
-            if rand_value <= cumulative:
-                selected_pack = cp.pack
-                break
-        else:
-            selected_pack = case_packs.last().pack
+        message, status_code = open_case(case)
+        if status_code != 200:
+            return Response(message, status=status_code)
 
-        serializer = PackSerializer(selected_pack)
+        pack: Pack = message["raw_pack"]
 
-        return Response({
-            "pack": serializer.data,
-        }, status=drf_status.HTTP_200_OK)
+        if user:
+            pack.in_stock_count -= 1
+            pack.save()
+            user.balance -= case.price
+            user.save()
+
+            UserInventory.objects.create(user=user, pack=pack)
+            CaseOpen.objects.create(user=user, case=case, drop=pack, open_data=timezone.now())
+
+        return Response({"drop": message["serialized_pack"]}, status=200)

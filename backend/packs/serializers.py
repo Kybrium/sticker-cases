@@ -16,6 +16,5 @@ class PackSerializer(serializers.ModelSerializer):
             "status",
             "in_stock_count",
             "image_url",
-            "cases",
+            "cases"
         ]
-
