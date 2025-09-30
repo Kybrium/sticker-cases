@@ -1,11 +1,11 @@
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
-from .models import Case, CaseStatus, CaseItems, CaseOpen
+from .models import Case, CaseStatus, CaseItem, CaseOpen
 from rest_framework import status as drf_status
 from rest_framework.decorators import action
-from packs.models import Pack
-from packs.serializers import PackSerializer, CaseItemsSerializer
+from packs.models import Pack, Liquidity
+from packs.serializers import PackSerializer, CaseItemSerializer
 from .serializers import CaseSerializer
 import random
 from django.views.decorators.cache import cache_page
@@ -19,7 +19,7 @@ from django.shortcuts import get_object_or_404
 
 
 def open_case(case: Case):
-    case_packs = CaseItems.objects.filter(case=case)
+    case_packs = CaseItem.objects.filter(case=case)
     if not case_packs.exists():
         return {"error": "Стикеры в кейсе отсутствуют"}, 400
 
@@ -76,13 +76,13 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
                         try:
                             pack = Pack.objects.get(pack_name=pack_info["pack_name"],
                                                     collection_name=pack_info["collection_name"])
-                            obj = CaseItems.objects.get(pack=pack)
+                            obj = CaseItem.objects.get(pack=pack)
                             obj.chance = pack_info["chance"]
                             chances_to_update.append(obj)
-                        except [Pack.DoesNotExist, CaseItems.DoesNotExist]:
+                        except [Pack.DoesNotExist, CaseItem.DoesNotExist]:
                             continue
                 if chances_to_update:
-                    CaseItems.objects.bulk_update(chances_to_update, ["chance"])
+                    CaseItem.objects.bulk_update(chances_to_update, ["chance"])
         except Exception as e:
             return Response(
                 {"detail": f"Ошибка обновления: {str(e)}"},
@@ -125,8 +125,8 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
         except Case.DoesNotExist:
             return Response({"error": "Кейс не найден."}, status=drf_status.HTTP_404_NOT_FOUND)
 
-        case_items = CaseItems.objects.filter(case=case)
-        serializer = CaseItemsSerializer(case_items, many=True)
+        case_items = CaseItem.objects.filter(case=case)
+        serializer = CaseItemSerializer(case_items, many=True)
         return Response(serializer.data, status=drf_status.HTTP_200_OK)
 
     @action(detail=False, methods=["POST", "GET"], url_path="case/(?P<case_name>[^/.]+)/open")
@@ -154,12 +154,36 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
         pack: Pack = message["raw_pack"]
 
         if user:
-            pack.in_stock_count -= 1
-            pack.save()
-            user.balance -= case.price
-            user.save()
+            if case.status == CaseStatus.OUT_OF_STICKERS:
+                return Response({"error": "Кейс не доступен для открытий."}, drf_status.HTTP_400_BAD_REQUEST)
 
-            UserInventory.objects.create(user=user, pack=pack)
-            CaseOpen.objects.create(user=user, case=case, drop=pack, open_data=timezone.now())
+            if pack.liquidity_count <= 0:
+                case.status = CaseStatus.OUT_OF_STICKERS
+                case.save()
+                # TODO: уведомить администраторов
+                return Response({"error": "В кейсе закончились стикеры. Баланс не был списан."},
+                                drf_status.HTTP_400_BAD_REQUEST)
+
+            try:
+                with transaction.atomic():
+                    drop: Liquidity = Liquidity.objects.filter(pack=pack, in_case=True).first()
+                    if not drop:
+                        case.status = CaseStatus.OUT_OF_STICKERS
+                        case.save()
+                        return Response({"error": "Не найден дроп для кейса. Баланс не был списан."},
+                                        drf_status.HTTP_400_BAD_REQUEST)
+                    drop.in_case = False
+                    drop.save()
+
+                    user.balance -= case.price
+                    user.save()
+
+                    UserInventory.objects.create(user=user, liquidity=drop)
+                    CaseOpen.objects.create(user=user, case=case, drop=drop, open_data=timezone.now())
+            except Exception:
+                return Response({"error": f"Ошибка во время распределения дропа. Баланс не был списан."},
+                                drf_status.HTTP_400_BAD_REQUEST)
+
+            return Response({"drop": message["serialized_pack"], "drop_number": drop.number}, status=200)
 
         return Response({"drop": message["serialized_pack"]}, status=200)

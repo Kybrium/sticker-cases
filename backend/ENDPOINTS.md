@@ -90,7 +90,7 @@
 ]
 ````
 
-Возвращает стикерпаки которые связаны с кейсом (например Blum Case) через CaseItems: \
+Возвращает стикерпаки которые связаны с кейсом (например Blum Case) через CaseItem: \
 
 - `pack_name` название пака
 - `pack_image` для фронта
@@ -110,7 +110,7 @@
 
 ````
 {
-  "pack": {
+  "drop": {
     "pack_name": "Cook",
     "collection_name": "Blum",
     "contributor": "Sticker Pack",
@@ -118,7 +118,8 @@
     "status": "in_stock",
     "in_stock_count": 0,
     "image_url": null
-  }
+ },
+  "drop_number": "213" 
 }
 ````
 
@@ -130,8 +131,8 @@ GET: Если не указывать, никакой логике на серв
 - `contributor` тот кто выпустил пак
 - `floor_price` цена пака
 - `status` статус пака
-- `in_stock_count` сколько закуплено паков для ликвидности
-- "image_url" фотка пака
+- `image_url` фотка пака
+- `drop_number` число пака, нужно для определения в закупленной ликвидности
 
 4. **PATCH /api/cases/update-chances/** \
    ***Request:***

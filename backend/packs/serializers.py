@@ -1,10 +1,10 @@
 from rest_framework import serializers
 from .models import Pack
-from cases.serializers import CaseItemsSerializer
+from cases.serializers import CaseItemSerializer
 
 
 class PackSerializer(serializers.ModelSerializer):
-    cases = CaseItemsSerializer(source="pack_items", many=True, read_only=True)
+    cases = CaseItemSerializer(source="pack_items", many=True, read_only=True)
 
     class Meta:
         model = Pack
@@ -14,7 +14,6 @@ class PackSerializer(serializers.ModelSerializer):
             "contributor",
             "floor_price",
             "status",
-            "in_stock_count",
             "image_url",
             "cases"
         ]

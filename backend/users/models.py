@@ -4,11 +4,10 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 
 
 class UserStatus(StrEnum):
-    ALIVE = auto() # бот доступный юзеру все ок
-    BLOCKED_BOT = auto() # юзер блокнул бота
-    DELETED = auto() # акк юзера удален
-    ADMIN = auto() # если регнулся через админку
-
+    ALIVE = auto()  # бот доступный юзеру все ок
+    BLOCKED_BOT = auto()  # юзер блокнул бота
+    DELETED = auto()  # акк юзера удален
+    ADMIN = auto()  # если регнулся через админку
 
     @classmethod
     def choices(cls):
@@ -22,6 +21,9 @@ class UserStatus(StrEnum):
 
 
 class CustomUser(AbstractUser):
+    class Meta:
+        db_table = "User"
+
     telegram_id = models.BigIntegerField(unique=True, blank=True, null=True)
     status = models.CharField(max_length=50, choices=UserStatus.choices(), default=UserStatus.ALIVE)
     language = models.CharField(max_length=10, blank=True, null=True)
@@ -42,6 +44,7 @@ class CustomUser(AbstractUser):
         related_query_name='customuser_perm',
         verbose_name='user permissions'
     )
+
     def save(self, *args, **kwargs):
         if self.is_staff or self.is_superuser:
             self.status = UserStatus.ADMIN
@@ -52,7 +55,8 @@ class CustomUser(AbstractUser):
 
 
 class UserInventory(models.Model):
+    class Meta:
+        db_table = "UserInventory"
+
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    pack = models.ForeignKey("packs.Pack", models.CASCADE)
-
-
+    liquidity = models.ForeignKey("packs.Liquidity", models.CASCADE, null=True, blank=True)
