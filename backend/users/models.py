@@ -1,6 +1,7 @@
 from django.db import models
 from enum import StrEnum, auto
 from django.contrib.auth.models import AbstractUser, Group, Permission
+from packs.models import Liquidity
 
 
 class UserStatus(StrEnum):
@@ -52,6 +53,10 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.username
+
+    @property
+    def get_liquidity(self):
+        return Liquidity.objects.filter(userinventory__user=self)
 
 
 class UserInventory(models.Model):

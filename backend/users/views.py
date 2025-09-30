@@ -1,12 +1,19 @@
 import os, json
-from datetime import datetime, timezone
+from .serializers import UserSerializer
 from django.contrib.auth import login, logout
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status, permissions
-from django.contrib.auth.models import User
+from django.utils import timezone
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.request import Request
+from rest_framework import viewsets
+from django.shortcuts import get_object_or_404
+from rest_framework import status as drf_status
+from packs.serializers import LiquiditySerializer
+from packs.models import Liquidity
 
-from .models import TelegramAccount
+from .models import CustomUser
 from .telegram_wbapp import verify_webapp_init_data, parse_init_data
 
 
@@ -29,29 +36,24 @@ class TelegramWebAppLoginView(APIView):
         except Exception:
             return Response({"ok": False, "error": "invalid user data"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Upsert TelegramAccount + user
-        acc = TelegramAccount.objects.filter(telegram_id=tg_id).select_related("user").first()
-        if acc is None:
-            user = User.objects.create_user(username=f"tg_{tg_id}")
-            acc = TelegramAccount.objects.create(
-                user=user,
+        user = CustomUser.objects.filter(telegram_id=tg_id)
+        if user is None:
+            user = CustomUser.objects.create(
                 telegram_id=tg_id,
                 username=user_json.get("username") or "",
                 first_name=user_json.get("first_name") or "",
                 last_name=user_json.get("last_name") or "",
                 photo_url=user_json.get("photo_url") or "",
-                auth_date=datetime.now(),
+                auth_date=timezone.now(),
             )
         else:
-            user = acc.user
-            acc.username = user_json.get("username") or acc.username
-            acc.first_name = user_json.get("first_name") or acc.first_name
-            acc.last_name = user_json.get("last_name") or acc.last_name
-            acc.photo_url = user_json.get("photo_url") or acc.photo_url
-            acc.auth_date = datetime.now()
-            acc.save()
+            user.username = user_json.get("username") or acc.username
+            user.first_name = user_json.get("first_name") or acc.first_name
+            user.last_name = user_json.get("last_name") or acc.last_name
+            user.photo_url = user_json.get("photo_url") or acc.photo_url
+            user.auth_date = timezone.now()
+            user.save()
 
-        # Create a Django session (cookie-based)
         login(request, user)
 
         return Response({
@@ -59,11 +61,11 @@ class TelegramWebAppLoginView(APIView):
             "user": {
                 "id": user.id,
                 "username": user.username,
-                "telegram_id": acc.telegram_id,
-                "telegram_username": acc.username,
-                "first_name": acc.first_name,
-                "last_name": acc.last_name,
-                "photo_url": acc.photo_url,
+                "telegram_id": user.telegram_id,
+                "telegram_username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "photo_url": user.photo_url,
             }
         }, status=status.HTTP_200_OK)
 
@@ -72,7 +74,7 @@ class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        acc = getattr(request.user, "telegram", None)
+        user = getattr(request.user, "telegram", None)
         return Response({
             "id": request.user.id,
             "username": request.user.username,
@@ -90,4 +92,25 @@ class LogoutView(APIView):
         logout(request)
         return Response({"ok": True}, status=status.HTTP_200_OK)
 
-# TODO: сделать вью которая возвращает всю ликвидность пользователя
+
+# ---------------------------------------------------------------------------------
+class UserAPIViewSet(viewsets.GenericViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+
+    @action(detail=False, methods=["GET"], url_path="(?P<telegram_id>[^/.]+)")
+    def get_user(self, request: Request, telegram_id=None):
+        user = get_object_or_404(CustomUser, telegram_id=telegram_id)
+        serialized = UserSerializer(user)
+        return Response({"message": "Пользователь найден", "user": serialized.data}, drf_status.HTTP_200_OK)
+
+    @action(detail=False, methods=["GET"], url_path="(?P<telegram_id>[^/.]+)/inventory")
+    def get_user_inventory(self, request: Request, telegram_id=None):
+        user: CustomUser = get_object_or_404(CustomUser, telegram_id=telegram_id)
+        liqs: list[Liquidity] = user.get_liquidity
+        if not liqs:
+            return Response({"error": "Инвентарь пуст"}, drf_status.HTTP_400_BAD_REQUEST)
+
+        serialized = LiquiditySerializer(liqs, many=True)
+        return Response({"message": f"Возвращено {len(liqs)} объектов", "inventory": serialized.data},
+                        drf_status.HTTP_200_OK)

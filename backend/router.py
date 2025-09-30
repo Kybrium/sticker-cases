@@ -6,11 +6,13 @@ from rest_framework.request import Request
 from rest_framework import status as drf_status
 from rest_framework.decorators import api_view
 from wallet.views import WalletAPIViewSet
+from users.views import UserAPIViewSet
 
 manifest = {
-  "url": "http://localhost:8080",
-  "name": "TON Connect Demo"
+    "url": "http://localhost:8080",
+    "name": "TON Connect Demo"
 }
+
 
 @api_view(["GET"])
 def get_manifest(request: Request):
@@ -32,4 +34,9 @@ router.register(
     prefix="wallet",
     viewset=WalletAPIViewSet,
     basename="wallet"
+)
+router.register(
+    prefix="users",
+    viewset=UserAPIViewSet,
+    basename="users"
 )

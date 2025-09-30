@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from .models import Pack
+from .models import Pack, Liquidity
 from cases.serializers import CaseItemSerializer
 
 
 class PackSerializer(serializers.ModelSerializer):
-    cases = CaseItemSerializer(source="pack_items", many=True, read_only=True)
+    cases = CaseItemSerializer(source="pack_item", many=True, read_only=True)
 
     class Meta:
         model = Pack
@@ -16,4 +16,13 @@ class PackSerializer(serializers.ModelSerializer):
             "status",
             "image_url",
             "cases"
+        ]
+
+
+class LiquiditySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Liquidity
+        fields = [
+            "pack",
+            "number"
         ]
