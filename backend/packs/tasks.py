@@ -4,7 +4,8 @@ from core.celery import celery_app
 
 BASE_URL = "http://localhost:8000"
 
-@celery_app.task(name="backend.packs.tasks.update_sticker_prices_task")
+
+@celery_app.task
 def update_sticker_prices_task():
     asyncio.run(update_sticker_prices())
 
@@ -26,7 +27,7 @@ async def update_sticker_prices():
                 packs_to_update[collection].update(packs)
 
         await client.patch(f"{BASE_URL}/api/packs/update-stickers-price/",
-                       json={"packs_data": packs_to_update})
+                           json={"packs_data": packs_to_update})
         await calculate_cases_price()
 
 
@@ -126,7 +127,7 @@ def _rebalance_probs_greedy(prices, probs, target_ev, min_p, max_p, eps=1e-9):
                 break
 
             avail_i = p[i] - min_p
-            room_j  = max_p - p[j]
+            room_j = max_p - p[j]
             if avail_i <= eps:
                 i_ptr += 1
                 continue
@@ -244,7 +245,7 @@ async def rebalance_chances(items, case_price, base_fee, case_name, percent=5, m
         return [x / total for x in p], ev
 
     # --- Основной цикл до попадания fee в диапазон ---
-    for _ in range(30): # кол-во попыток для попадания в диапазон
+    for _ in range(30):  # кол-во попыток для попадания в диапазон
         chances_list = compute_chances(prices, categories, CATEGORY)
         target_ev = case_price * (1 - base_fee / 100)
         chances_list, EV = greedy_adjust(prices, chances_list, categories, CATEGORY, target_ev, max_iter=max_iter)
@@ -270,8 +271,8 @@ async def rebalance_chances(items, case_price, base_fee, case_name, percent=5, m
             "chance": chances_list[i]
         })
 
-
-    print(f"[rebalance] Кейc {case_name}: финальные шансы = {[(n, round(items[n]['chance'],4)) for n in names]}, fee = {new_fee:.2f}%, цена = {case_price:.2f}")
+    print(
+        f"[rebalance] Кейc {case_name}: финальные шансы = {[(n, round(items[n]['chance'], 4)) for n in names]}, fee = {new_fee:.2f}%, цена = {case_price:.2f}")
     return chances_to_update, {str(case_name): {"price": case_price, "fee": new_fee}}
 
 

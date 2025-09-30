@@ -90,7 +90,7 @@
 ]
 ````
 
-Возвращает стикерпаки которые связаны с кейсом (например Blum Case) через CaseItems: \
+Возвращает стикерпаки которые связаны с кейсом (например Blum Case) через CaseItem: \
 
 - `pack_name` название пака
 - `pack_image` для фронта
@@ -98,12 +98,19 @@
 - `case_name` имя кейса
 - `pack_floor_price` цена пака глобально
 
-3. **GET /api/cases/case/Blum Case/demo-open**
-   ***Response:***
+3. **POST, GET /api/cases/case/Blum Case/open**
+
+***Request:***
+
+````
+{"telegram_id": "123456789"}
+````
+
+***Response:***
 
 ````
 {
-  "pack": {
+  "drop": {
     "pack_name": "Cook",
     "collection_name": "Blum",
     "contributor": "Sticker Pack",
@@ -111,19 +118,21 @@
     "status": "in_stock",
     "in_stock_count": 0,
     "image_url": null
-  }
+ },
+  "drop_number": "213" 
 }
 ````
 
-Позволяет открыть кейс в демо режиме. Никаких записей в бд нету:
+Открытие кейсов. POST: Если указать `"telegram_id"` то деньги спишутся с баланса юзера и он в инвентарь получит дроп.
+GET: Если не указывать, никакой логике на сервере указано не будет.
 
 - `pack_name` имя пака
 - `collection_name` название коллекции
 - `contributor` тот кто выпустил пак
 - `floor_price` цена пака
 - `status` статус пака
-- `in_stock_count` сколько закуплено паков для ликвидности
-- "image_url" фотка пака
+- `image_url` фотка пака
+- `drop_number` число пака, нужно для определения в закупленной ликвидности
 
 4. **PATCH /api/cases/update-chances/** \
    ***Request:***

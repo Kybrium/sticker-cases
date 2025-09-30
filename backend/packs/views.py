@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
-from .models import Pack
+from .models import Pack, Liquidity
 from rest_framework import status as drf_status
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
@@ -9,6 +9,7 @@ from packs.serializers import PackSerializer
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from django.db import transaction
+from users.models import CustomUser, UserInventory
 
 
 class PackAPIViewSet(viewsets.GenericViewSet):
@@ -38,13 +39,11 @@ class PackAPIViewSet(viewsets.GenericViewSet):
         serializer = PackSerializer(packs, many=True)
         return Response(serializer.data, status=drf_status.HTTP_200_OK)
 
-
     @action(detail=False, methods=["get"], url_path="(?P<collection_name>[^/.]+)/(?P<pack_name>[^/.]+)")
     def get_pack(self, request: Request, pack_name=None, collection_name=None):
         pack = get_object_or_404(Pack, pack_name=pack_name, collection_name=collection_name)
         serializer = PackSerializer(pack)
         return Response(serializer.data, status=drf_status.HTTP_200_OK)
-
 
     @action(detail=False, methods=["patch"], url_path="update-stickers-price")
     def update_stickers_price(self, request: Request):
@@ -74,3 +73,29 @@ class PackAPIViewSet(viewsets.GenericViewSet):
             )
 
         return Response({"info": len(packs_to_update)}, status=drf_status.HTTP_200_OK)
+
+    @action(detail=False, methods=["POST"], url_path="sell")
+    def sell_liquidity(self, request: Request, liquidity_id: int = None):
+        telegram_id = request.data.get("telegram_id")
+        pack_name = request.data.get("pack_name")
+        collection_name = request.data.get("collection_name")
+        contributor = request.data.get("contributor")
+        number = request.data.get("number")
+
+        pack: Pack = Pack.objects.get(pack_name=pack_name, collection_name=collection_name, contributor=contributor)
+        liquidity: Liquidity = Liquidity.objects.get(pack=pack, number=number)
+
+        user: CustomUser = CustomUser.objects.get(telegram_id=telegram_id)
+        get_object_or_404(UserInventory, user=user, liquidity=liquidity)
+
+        try:
+            with transaction.atomic():
+                user.balance += pack.floor_price
+                user.save()
+                UserInventory.objects.filter(user=user, liquidity=liquidity).delete()
+                liquidity.in_case = True
+                liquidity.save()
+        except Exception:
+            return Response({"error": "Произошла ошибка во время продажи стикера. Стикер не был продан."})
+
+        return Response({"message": "Стикер был продан"}, drf_status.HTTP_200_OK)

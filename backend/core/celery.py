@@ -8,7 +8,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 celery_app = Celery("core")
 celery_app.config_from_object("core.settings", namespace="CELERY")
 celery_app.conf.update(task_serializer="pickle")
-celery_app.autodiscover_tasks()
+celery_app.autodiscover_tasks(["packs"])
 
 # Define beat schedule without importing tasks directly
 celery_app.conf.beat_schedule = {

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Case, CaseItems
+from .models import Case, CaseItem
 
 
 class CaseSerializer(serializers.ModelSerializer):
@@ -8,7 +8,7 @@ class CaseSerializer(serializers.ModelSerializer):
         fields = ["name", "price", "image_url", "base_fee"]
 
 
-class CaseItemsSerializer(serializers.ModelSerializer):
+class CaseItemSerializer(serializers.ModelSerializer):
     pack_name = serializers.CharField(source="pack.pack_name")
     collection_name = serializers.CharField(source="pack.collection_name")
     pack_floor_price = serializers.DecimalField(source="pack.floor_price", max_digits=20, decimal_places=3)
@@ -17,5 +17,5 @@ class CaseItemsSerializer(serializers.ModelSerializer):
     case_name = serializers.CharField(source="case.name")
 
     class Meta:
-        model = CaseItems
+        model = CaseItem
         fields = ["pack_name", "collection_name", "pack_image", "chance", "case_name", "pack_floor_price"]

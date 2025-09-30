@@ -2,11 +2,11 @@ from django.db import models
 from users.models import CustomUser
 from packs.models import Pack
 
+
 class Deposit(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     sum = models.DecimalField(max_digits=20, decimal_places=3)
     date = models.DateTimeField()
-    wallet = models.TextField()
 
     def __str__(self):
         return f"{self.wallet} {self.date}"
@@ -19,4 +19,3 @@ class Withdrawal(models.Model):
 
     def __str__(self):
         return f"{self.pack} {self.date}"
-
