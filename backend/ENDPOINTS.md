@@ -317,6 +317,84 @@ GET: Если не указывать, никакой логике на серв
 
 ### users
 
+1. GET /api/users/{telegram_id}
+
+***Response:***
+
+````
+{
+    "message": "Пользователь найден",
+    "user": {
+        "telegram_id": 123456789,
+        "username": "vvalera808",
+        "balance": "108.532",
+        "image_url": "/media/users/plug.png"
+    
+    }
+}
+
+````
+
+Получить информацию о пользователе
+
+2. GET /api/users/{telegram_id}/inventory/
+
+***Response:***
+
+````
+{
+    "message": "Возвращено 2 объектов",
+    "inventory": [
+        {
+            "pack": 1,
+            "number": 562
+        },
+        {
+            "pack": 3,
+            "number": 819
+        }
+    ]
+}
+````
+
+Получить инвентарь пользователя
+
+3. GET /api/users/{telegram_id}/transactions/
+
+***Response:***
+
+````
+{
+  "transactions": [
+    {
+      "type": "Sticker sell",
+      "data": {
+        "price": 13.904,
+        "date": "2025-10-01T09:33:27.112899Z"
+      }
+    },
+    {
+      "type": "Case open",
+      "data": {
+        "price": 13.904,
+        "date": "2025-10-01T09:29:40.254197Z"
+      }
+    },
+    {
+      "type": "Deposit",
+      "data": {
+        "sum": 0.1,
+        "date": "2025-10-01T09:22:09.608268Z"
+      }
+    }
+  ]
+}
+````
+
+Возвращает все транзакции совершенные пользователем отсортированно по времени (депозит, вывод, открытие кейса, продажа
+стикера.)
+
+
 ****
 
 ### wallet
@@ -325,15 +403,19 @@ GET: Если не указывать, никакой логике на серв
    ***Request:***
 
 ````
+
 {"telegram_id": 213113123}
+
 ````
 
 ***Response:***
 
 ````
+
 {
-  "nonce": "A9cPYa107z5SjmHFwgc01jvcUi34Mg3s"
+"nonce": "A9cPYa107z5SjmHFwgc01jvcUi34Mg3s"
 }
+
 ````
 
 Получает серверный nonce для формирования message и подписи на сервере для подтверждения что юзер владеет кошем. Для
@@ -343,20 +425,23 @@ GET: Если не указывать, никакой логике на серв
    ***Request:***
 
 ````
+
 {
-  "signature": "Wm6MjqZRJ/kubFN2646dMswslHDfBOYX/ROCNeu3BKuPC9aGFmF6L7fnoF8FFVGG3jXDnPRCwEt+JztPpri+Ag==",
-  "message": "wallet=v-syrom-formate-kosh&telegram_id=213123123&timestamp=1600002213&nonce=e4w101gYi1f-baoB07HqkoYiHi6Mc58K",
-  "public": "FrVLJTyLUYvDGp01ek0OWnMK82+9Ti4RChebSj8E+WE="
+"signature": "Wm6MjqZRJ/kubFN2646dMswslHDfBOYX/ROCNeu3BKuPC9aGFmF6L7fnoF8FFVGG3jXDnPRCwEt+JztPpri+Ag==",
+"message": "
+wallet=v-syrom-formate-kosh&telegram_id=213123123&timestamp=1600002213&nonce=e4w101gYi1f-baoB07HqkoYiHi6Mc58K",
+"public": "FrVLJTyLUYvDGp01ek0OWnMK82+9Ti4RChebSj8E+WE="
 }
+
 ````
 
 ***Response:***
 
 ````
-{
-    "message": "Wallet connected successfully"
-}
 
+{
+"message": "Wallet connected successfully"
+}
 
 ````
 
@@ -368,16 +453,20 @@ GET: Если не указывать, никакой логике на серв
 ***Request***
 
 ````
+
 {"telegram_id": "321321"}
+
 ````
 
 ***Response***
 
 ````
-{"message": "Invoice created", 
-"address_to_pay": address, 
+
+{"message": "Invoice created",
+"address_to_pay": address,
 "invoice_id": invoice_id
 }
+
 ````
 
 `address_to_pay` - возращает адрес на который нужно депнуть в красивом формате\
@@ -391,17 +480,21 @@ GET: Если не указывать, никакой логике на серв
 ***Request:***
 
 ````
+
 {"telegram_id": "321321"}
+
 ````
 
 ***Response:***
 
 ````
+
 {
 "message": "Invoice is paid",
-"status": InvoiceStatus.PAID, 
+"status": InvoiceStatus.PAID,
 "new_balance": balance
 }
+
 ````
 
 Срабатывает после того как пользователь нажимает кнопку "я депнул" или что то в этом духе. Если инвойс оплачен,
@@ -416,10 +509,12 @@ GET: Если не указывать, никакой логике на серв
    ***Response:***
 
 ````
+
 {
-  "url": "http://localhost:8080",
-  "name": "TON Connect Demo"
+"url": "http://localhost:8080",
+"name": "TON Connect Demo"
 }
+
 ````
 
 Необходим для корректной работы ton connect на клиенте
@@ -429,19 +524,21 @@ GET: Если не указывать, никакой логике на серв
 ***Request:***
 
 ````
+
 {
-  "id": "string",
-  "status": "pending | paid | cancelled | expired",
-  "amount": "string",
-  "description": "string",
-  "date_create": 1234567890,
-  "date_expire": 1234567890,
-  "date_change": 1234567890,
-  "payment_link": "string",
-  "pay_to_address": "0:<hash>",
-  "paid_by_address": "0:<hash>",
-  "overpayment": "string"
+"id": "string",
+"status": "pending | paid | cancelled | expired",
+"amount": "string",
+"description": "string",
+"date_create": 1234567890,
+"date_expire": 1234567890,
+"date_change": 1234567890,
+"payment_link": "string",
+"pay_to_address": "0:<hash>",
+"paid_by_address": "0:<hash>",
+"overpayment": "string"
 }
+
 ````
 
 Вебхук для получения статусов инвойсов от TonConsole.

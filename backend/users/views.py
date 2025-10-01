@@ -11,10 +11,14 @@ from rest_framework import viewsets
 from django.shortcuts import get_object_or_404
 from rest_framework import status as drf_status
 from packs.serializers import LiquiditySerializer
-from packs.models import Liquidity
-
+from packs.models import Liquidity, PackSell
+from cases.models import CaseOpen
+from wallet.models import Withdrawal, Deposit
+from itertools import chain
+from operator import attrgetter
 from .models import CustomUser
 from .telegram_wbapp import verify_webapp_init_data, parse_init_data
+from .serializers import TransactionSerializer
 
 
 class TelegramWebAppLoginView(APIView):
@@ -114,3 +118,21 @@ class UserAPIViewSet(viewsets.GenericViewSet):
         serialized = LiquiditySerializer(liqs, many=True)
         return Response({"message": f"Возвращено {len(liqs)} объектов", "inventory": serialized.data},
                         drf_status.HTTP_200_OK)
+
+    @action(detail=False, methods=["GET"], url_path="(?P<telegram_id>[^/.]+)/transactions")
+    def get_all_user_transactions(self, request: Request, telegram_id=None):
+        user = get_object_or_404(CustomUser, telegram_id=telegram_id)
+        all_case_opens = CaseOpen.objects.filter(user=user)
+        all_pack_sell = PackSell.objects.filter(user=user)
+        all_deposits = Deposit.objects.filter(user=user)
+        all_withdrawals = Withdrawal.objects.filter(user=user)
+
+        all_transactions = list(chain(all_withdrawals, all_deposits, all_case_opens, all_pack_sell))
+        if not all_transactions:
+            return Response({"error": "У пользователя нет транзакций"}, drf_status.HTTP_400_BAD_REQUEST)
+
+        sorted_transactions = sorted(all_transactions, key=attrgetter("date"), reverse=True)
+
+        serialized = TransactionSerializer(sorted_transactions, many=True)
+
+        return Response({"transactions": serialized.data}, drf_status.HTTP_200_OK)

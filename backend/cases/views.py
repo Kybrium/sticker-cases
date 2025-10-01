@@ -54,6 +54,8 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
 
         if pagination:
             paginator = LimitOffsetPagination()
+            paginator.default_limit = 2
+            paginator.max_limit = 10
             page = paginator.paginate_queryset(active_cases, request, view=self)
             if page is not None:
                 serializer = self.get_serializer(page, many=True)
@@ -179,9 +181,9 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
                     user.save()
 
                     UserInventory.objects.create(user=user, liquidity=drop)
-                    CaseOpen.objects.create(user=user, case=case, drop=drop, open_data=timezone.now())
-            except Exception:
-                return Response({"error": f"Ошибка во время распределения дропа. Баланс не был списан."},
+                    CaseOpen.objects.create(user=user, case=case, drop=drop, date=timezone.now())
+            except Exception as e:
+                return Response({"error": f"Ошибка во время распределения дропа: {e}. Баланс не был списан."},
                                 drf_status.HTTP_400_BAD_REQUEST)
 
             return Response({"drop": message["serialized_pack"], "drop_number": drop.number}, status=200)

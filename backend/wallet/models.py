@@ -14,8 +14,14 @@ class Deposit(models.Model):
 
 class Withdrawal(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    pack = models.ForeignKey(Pack, on_delete=models.CASCADE)
+    liquidity = models.ForeignKey("packs.Liquidity", models.CASCADE, null=True, blank=True)
     date = models.DateTimeField()
 
     def __str__(self):
         return f"{self.pack} {self.date}"
+
+    @property
+    def sum(self):
+        if self.liquidity and self.liquidity.pack:
+            return self.liquidity.pack.floor_price
+        return None

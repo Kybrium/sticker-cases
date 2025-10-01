@@ -14,4 +14,4 @@ class CaseItemAdmin(admin.ModelAdmin):
 
 @admin.register(CaseOpen)
 class CaseOpenAdmin(admin.ModelAdmin):
-    list_display = ["user", "case", "drop", "open_data"]
+    list_display = ["user", "case", "drop", "date"]

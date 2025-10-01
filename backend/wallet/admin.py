@@ -9,4 +9,4 @@ class DepositAdmin(admin.ModelAdmin):
 
 @admin.register(Withdrawal)
 class WithdrawalAdmin(admin.ModelAdmin):
-    list_display = ["user", "pack", "date"]
+    list_display = ["user", "liquidity", "date"]

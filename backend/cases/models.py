@@ -29,8 +29,6 @@ class Case(models.Model):
     status = models.CharField(max_length=50, choices=CaseStatus.choices(), default=CaseStatus.INACTIVE)
     image_url = models.ImageField(upload_to="cases/", blank=True, null=True)
 
-    # TODO: сделать метод который возвращает True/False есть ли в нем ликвидность. Если False, статус переходит в OUT_OF_STICKERS
-
     def __str__(self):
         return self.name
 
@@ -59,4 +57,10 @@ class CaseOpen(models.Model):
     case = models.ForeignKey(Case, on_delete=models.CASCADE)
     user = models.ForeignKey("users.CustomUser", on_delete=models.CASCADE, related_name="users")
     drop = models.ForeignKey("packs.Liquidity", on_delete=models.SET_NULL, null=True, blank=True)
-    open_data = models.DateTimeField()
+    date = models.DateTimeField()
+
+    @property
+    def price(self):
+        if self.drop and self.drop.pack:
+            return self.drop.pack.floor_price
+        return None
