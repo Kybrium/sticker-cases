@@ -43,7 +43,7 @@ if __name__ == "__main__":
     priv = keys["private"]
     pub = keys["public"]
 
-    msg = "wallet=v-syrom-formate-kosh&telegram_id=123456789&timestamp=1759139232&nonce=aGNhZfelBOj8lR3-WEbou8Vau4el5Ih5"
+    msg = "wallet=v-syrom-formate-kosh&telegram_id=123456789&timestamp=1759310239&nonce=WhrzVe0nYMBHIWC21SMp2BC3eh0WbKJ5"
 
     signed = generate_signature_for_message(priv, msg, pub)
     print(signed)

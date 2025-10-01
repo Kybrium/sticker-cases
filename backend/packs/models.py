@@ -49,3 +49,18 @@ class Liquidity(models.Model):
 
     def __str__(self):
         return f"{self.pack} {self.number}"
+
+
+class PackSell(models.Model):
+    class Meta:
+        db_table = "PackSell"
+
+    liquidity = models.ForeignKey("packs.Liquidity", models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey("users.CustomUser", on_delete=models.CASCADE)
+    date = models.DateTimeField()
+
+    @property
+    def price(self):
+        if self.liquidity and self.liquidity.pack:
+            return self.liquidity.pack.floor_price
+        return None

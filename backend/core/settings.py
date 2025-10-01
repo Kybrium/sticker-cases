@@ -1,30 +1,26 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Prod | Dev init
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret")
 DEBUG = os.getenv("DJANGO_DEBUG", "True") == "True"
-
 
 # RICH SETUP
 mode = "DEV" if DEBUG else "PROD"
 color = "green" if DEBUG else "red"
 
-
 # HOSTS Setup
 HOSTS = os.getenv("DJANGO_HOSTS", "localhost,127.0.0.1").split(",")
-HOSTS_URLS = os.getenv("DJANGO_HOSTS_URLS","http://localhost:3000,http://127.0.0.1:3000").split(",")
-
+HOSTS_URLS = os.getenv("DJANGO_HOSTS_URLS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 
 # ALLOWED HOSTS for Prod | Dev
 ALLOWED_HOSTS = HOSTS
-
 
 INSTALLED_APPS = [
     # Native Django
@@ -46,7 +42,6 @@ INSTALLED_APPS = [
     "wallet"
 ]
 
-
 # MIDDLEWARE THE ORDER IS IMPORTANT!!!!!!!
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -61,7 +56,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'core.urls'
-
 
 # TEMPLATES FOR EMAILS OR ANYTHING ELSE
 TEMPLATES = [
@@ -81,8 +75,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-
-
 # DB SETUP
 DATABASES = {
     "default": {
@@ -95,11 +87,10 @@ DATABASES = {
         "PORT": os.getenv("DB_PORT", "5432"),
 
         # helpful timeouts for dev
-        "CONN_MAX_AGE": 0,           # 0 = no persistent connections
-        "OPTIONS": {},               # extra psycopg options if needed later
+        "CONN_MAX_AGE": 0,  # 0 = no persistent connections
+        "OPTIONS": {},  # extra psycopg options if needed later
     }
 }
-
 
 # PASS VALIDATION DEFAULT OF DJANGO
 AUTH_PASSWORD_VALIDATORS = [
@@ -125,7 +116,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-
 # STATIC SETUP
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -133,27 +123,25 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-
 # ============================ Cors & Rest setups =================================
 SESSION_COOKIE_NAME = "sc_sessionid"
 SESSION_COOKIE_SAMESITE = "Lax"  # or "None" if we use a different site/port and HTTPS
-SESSION_COOKIE_SECURE = False     # True in production (HTTPS)
-CSRF_COOKIE_SECURE = False        # True in production (HTTPS)
+SESSION_COOKIE_SECURE = False  # True in production (HTTPS)
+CSRF_COOKIE_SECURE = False  # True in production (HTTPS)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
-    "PAGE_SIZE": 2,
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination"
 }
 
 CORS_ALLOWED_ORIGINS = HOSTS_URLS
 CSRF_TRUSTED_ORIGINS = HOSTS_URLS
 
-# TODO: добавить в компоуз сервис broker
-CELERY_BROKER_URL = os.getenv("DJANGO_BROKER_URL", default="redis://localhost:6379/0") # вместо localhost название сервиса
+CELERY_BROKER_URL = os.getenv("DJANGO_BROKER_URL",
+                              default="redis://localhost:6379/0")  # вместо localhost название сервиса
 CELERY_ACCEPT_CONTENT = [
     "pickle",
     "application/json",
@@ -161,7 +149,7 @@ CELERY_ACCEPT_CONTENT = [
 CELERY_TASK_SERIALIZER = "pickle"
 CELERY_EVENT_SERIALIZER = "pickle"
 
-APPEND_SLASH=False
+APPEND_SLASH = False
 
 CACHES = {
     "default": {
@@ -188,15 +176,18 @@ if os.environ.get("RUN_MAIN") == "true":
 
     console = Console()
 
+
     # --------- Helpers ---------
     def yes_no(val: bool) -> str:
         return f"[green]Yes[/green]" if val else "[red]No[/red]"
+
 
     def list_to_columns(items, title=None, color="cyan"):
         if not items:
             return Panel.fit("[dim]— none —[/dim]", title=title, border_style="grey37", box=box.ROUNDED)
         bullets = [f"[{color}]•[/] {i}" for i in items]
         return Panel.fit(Columns(bullets, equal=True, expand=True), title=title, border_style="grey37", box=box.ROUNDED)
+
 
     # --------- Facts ---------
     mode = "DEV" if DEBUG else "PROD"
@@ -270,7 +261,7 @@ if os.environ.get("RUN_MAIN") == "true":
     if MIDDLEWARE:
         mw_table = Table.grid(padding=(0, 1))
         for i, mw in enumerate(MIDDLEWARE):
-            mw_table.add_row(f"[white]{i+1:02}.[/] {mw}")
+            mw_table.add_row(f"[white]{i + 1:02}.[/] {mw}")
         console.print(
             Panel.fit(mw_table, title="[bold]Middleware Order[/bold]", border_style="grey37", box=box.ROUNDED)
         )

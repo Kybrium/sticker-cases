@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
-from .models import Pack, Liquidity
+from .models import Pack, Liquidity, PackSell
 from rest_framework import status as drf_status
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
@@ -10,6 +10,7 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from django.db import transaction
 from users.models import CustomUser, UserInventory
+from django.utils import timezone
 
 
 class PackAPIViewSet(viewsets.GenericViewSet):
@@ -95,7 +96,9 @@ class PackAPIViewSet(viewsets.GenericViewSet):
                 UserInventory.objects.filter(user=user, liquidity=liquidity).delete()
                 liquidity.in_case = True
                 liquidity.save()
-        except Exception:
-            return Response({"error": "Произошла ошибка во время продажи стикера. Стикер не был продан."})
+                PackSell.objects.create(liquidity=liquidity, user=user, date=timezone.now())
+        except Exception as e:
+            return Response({"error": f"Произошла ошибка во время продажи стикера: {e}. Стикер не был продан."},
+                            drf_status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "Стикер был продан"}, drf_status.HTTP_200_OK)
