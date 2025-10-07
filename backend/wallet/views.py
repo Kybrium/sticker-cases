@@ -36,11 +36,12 @@ from users.models import CustomUser, UserInventory
 from .models import Deposit, Withdrawal
 from .serializers import SignatureValidationSerializer, WalletSerializer
 
+PLUG = "plug"
 MAX_MESSAGE_AGE = 300
-IS_TESTNET: Any | None = os.getenv("IS_TESNET", "")
-INVOICE_AUTHORIZATION_TOKEN: str | None = os.getenv("INVOICE_AUTHORIZATION_TOKEN")
+IS_TESTNET: Any | None = os.getenv("IS_TESNET", PLUG)
+INVOICE_AUTHORIZATION_TOKEN: str | None = os.getenv("INVOICE_AUTHORIZATION_TOKEN", PLUG)
 MNEMONIC: str | None = os.getenv(
-    "MNEMONIC",
+    "MNEMONIC", PLUG
 )
 TONAPI_KEY: str | None = os.getenv("TONAPI_KEY")
 
@@ -74,7 +75,7 @@ def verify_signature(public_key: str, message: str, signature: str) -> bool:
 
 
 async def transfer_nft(
-    nft_address: str | None, new_owner_address: str | None
+        nft_address: str | None, new_owner_address: str | None
 ) -> tuple[bool, str] | tuple[bool, Exception] | tuple[bool, None]:
     # TODO: сделать проверку существует ли аддресс нфт
     if not nft_address:
@@ -101,7 +102,8 @@ async def transfer_nft(
                     break
 
             success = (
-                tx["success"] and not tx["aborted"] and tx["compute_phase"]["success"] and tx["action_phase"]["success"]
+                    tx["success"] and not tx["aborted"] and tx["compute_phase"]["success"] and tx["action_phase"][
+                "success"]
             )
 
             if not success:
