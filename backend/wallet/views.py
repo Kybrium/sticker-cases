@@ -36,7 +36,7 @@ from users.models import CustomUser, UserInventory
 from .models import Deposit, Withdrawal
 from .serializers import SignatureValidationSerializer, WalletSerializer
 
-PLUG = "plug"
+PLUG = "plug plug plug plug plug plug plug plug plug plug plug plug"
 MAX_MESSAGE_AGE = 300
 IS_TESTNET: Any | None = os.getenv("IS_TESNET", PLUG)
 INVOICE_AUTHORIZATION_TOKEN: str | None = os.getenv("INVOICE_AUTHORIZATION_TOKEN", PLUG)
