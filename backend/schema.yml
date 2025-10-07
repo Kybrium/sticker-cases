@@ -1,0 +1,620 @@
+openapi: 3.0.3
+info:
+  title: Sticker Cases API
+  version: 1.0.0
+  description: Свага для фронта
+paths:
+  /api/cases/:
+    get:
+      operationId: api_cases_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCaseList'
+          description: ''
+  /api/cases/case/{case_name}/:
+    get:
+      operationId: api_cases_case_retrieve
+      parameters:
+      - in: path
+        name: case_name
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+  /api/cases/case/{case_name}/open/:
+    get:
+      operationId: api_cases_case_open_retrieve
+      parameters:
+      - in: path
+        name: case_name
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+    post:
+      operationId: api_cases_case_open_create
+      parameters:
+      - in: path
+        name: case_name
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Case'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Case'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Case'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+  /api/cases/update-cases/:
+    patch:
+      operationId: api_cases_update_cases_partial_update
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCase'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCase'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCase'
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+  /api/cases/update-chances/:
+    patch:
+      operationId: api_cases_update_chances_partial_update
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCase'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCase'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCase'
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+          description: ''
+  /api/packs/:
+    get:
+      operationId: api_packs_list
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPackList'
+          description: ''
+  /api/packs/{collection_name}/{pack_name}/:
+    get:
+      operationId: api_packs_retrieve
+      parameters:
+      - in: path
+        name: collection_name
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: pack_name
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pack'
+          description: ''
+  /api/packs/contributor/:
+    get:
+      operationId: api_packs_contributor_retrieve
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pack'
+          description: ''
+  /api/packs/sell/:
+    post:
+      operationId: api_packs_sell_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pack'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Pack'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Pack'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pack'
+          description: ''
+  /api/packs/update-stickers-price/:
+    patch:
+      operationId: api_packs_update_stickers_price_partial_update
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPack'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPack'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPack'
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pack'
+          description: ''
+  /api/users/{telegram_id}/:
+    get:
+      operationId: api_users_retrieve
+      parameters:
+      - in: path
+        name: telegram_id
+        schema:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        required: true
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/{telegram_id}/inventory/:
+    get:
+      operationId: api_users_inventory_retrieve
+      parameters:
+      - in: path
+        name: telegram_id
+        schema:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        required: true
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/{telegram_id}/transactions/:
+    get:
+      operationId: api_users_transactions_retrieve
+      parameters:
+      - in: path
+        name: telegram_id
+        schema:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+        required: true
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/wallet/check-deposit/:
+    post:
+      operationId: api_wallet_check_deposit_create
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/wallet/connect-wallet/:
+    post:
+      operationId: api_wallet_connect_wallet_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignatureValidation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SignatureValidation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SignatureValidation'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignatureValidation'
+          description: ''
+  /api/wallet/create-invoice/:
+    post:
+      operationId: api_wallet_create_invoice_create
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/wallet/get-nonce/:
+    post:
+      operationId: api_wallet_get_nonce_create
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/wallet/withdrawal/:
+    post:
+      operationId: api_wallet_withdrawal_create
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /tonconnect-manifest.json:
+    get:
+      operationId: tonconnect_manifest.json_retrieve
+      tags:
+      - tonconnect-manifest.json
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+components:
+  schemas:
+    Case:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,17}(?:\.\d{0,3})?$
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+        base_fee:
+          type: number
+          format: double
+      required:
+      - name
+      - price
+    CaseItem:
+      type: object
+      properties:
+        pack_name:
+          type: string
+        collection_name:
+          type: string
+        pack_image:
+          type: string
+        chance:
+          type: number
+          format: double
+        case_name:
+          type: string
+        pack_floor_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,17}(?:\.\d{0,3})?$
+      required:
+      - case_name
+      - chance
+      - collection_name
+      - pack_floor_price
+      - pack_image
+      - pack_name
+    Pack:
+      type: object
+      properties:
+        pack_name:
+          type: string
+          maxLength: 255
+        collection_name:
+          type: string
+          maxLength: 255
+        contributor:
+          type: string
+          maxLength: 255
+        floor_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,17}(?:\.\d{0,3})?$
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+        cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseItem'
+          readOnly: true
+      required:
+      - cases
+      - collection_name
+      - contributor
+      - floor_price
+      - pack_name
+    PaginatedCaseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Case'
+    PaginatedPackList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pack'
+    PatchedCase:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,17}(?:\.\d{0,3})?$
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+        base_fee:
+          type: number
+          format: double
+    PatchedPack:
+      type: object
+      properties:
+        pack_name:
+          type: string
+          maxLength: 255
+        collection_name:
+          type: string
+          maxLength: 255
+        contributor:
+          type: string
+          maxLength: 255
+        floor_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,17}(?:\.\d{0,3})?$
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+        cases:
+          type: array
+          items:
+            $ref: '#/components/schemas/CaseItem'
+          readOnly: true
+    SignatureValidation:
+      type: object
+      properties:
+        signature:
+          type: string
+        message:
+          type: string
+        public:
+          type: string
+      required:
+      - message
+      - public
+      - signature
+    User:
+      type: object
+      properties:
+        telegram_id:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,17}(?:\.\d{0,3})?$
+          nullable: true
+        image_url:
+          type: string
+          format: uri
+      required:
+      - username

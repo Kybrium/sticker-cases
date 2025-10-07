@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import TelegramWebAppLoginView, MeView, LogoutView
+
+from .views import LogoutView, MeView, TelegramWebAppLoginView
 
 urlpatterns = [
     path("telegram-webapp/", TelegramWebAppLoginView.as_view(), name="tg-webapp-login"),

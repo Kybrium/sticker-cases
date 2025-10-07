@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from .models import Deposit, Withdrawal
 
 
@@ -9,4 +10,4 @@ class DepositAdmin(admin.ModelAdmin):
 
 @admin.register(Withdrawal)
 class WithdrawalAdmin(admin.ModelAdmin):
-    list_display = ["user", "liquidity", "date"]
+    list_display = ["user", "pack", "sum", "date"]

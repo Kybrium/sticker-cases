@@ -1,30 +1,26 @@
-from rest_framework import serializers
-from .models import CustomUser
-from packs.models import PackSell
 from cases.models import CaseOpen
-from wallet.models import Withdrawal, Deposit
+from packs.models import PackSell
+from rest_framework import serializers
+from wallet.models import Deposit, Withdrawal
+
+from .models import CustomUser
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = [
-            "telegram_id",
-            "username",
-            "balance",
-            "image_url"
-        ]
+        fields = ["telegram_id", "username", "balance", "image_url", "first_name", "last_name"]
 
 
 class TransactionSerializer(serializers.ModelSerializer):
-    def to_representation(self, instance):
+    def to_representation(self, instance: str) -> dict:  # type: ignore[return]
         if isinstance(instance, PackSell):
             return {
                 "type": "Sticker sell",
                 "data": {
                     "price": instance.price,
                     "date": instance.date,
-                }
+                },
             }
         elif isinstance(instance, CaseOpen):
             return {
@@ -32,7 +28,7 @@ class TransactionSerializer(serializers.ModelSerializer):
                 "data": {
                     "price": instance.price,
                     "date": instance.date,
-                }
+                },
             }
         elif isinstance(instance, Deposit):
             return {
@@ -40,13 +36,13 @@ class TransactionSerializer(serializers.ModelSerializer):
                 "data": {
                     "sum": instance.sum,
                     "date": instance.date,
-                }
+                },
             }
         elif isinstance(instance, Withdrawal):
             return {
                 "type": "Withdrawal",
                 "data": {
-                    "sum": instance.price,
+                    "sum": instance.sum,
                     "date": instance.date,
-                }
+                },
             }

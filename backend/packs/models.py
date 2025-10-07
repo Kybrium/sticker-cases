@@ -1,22 +1,4 @@
 from django.db import models
-from enum import StrEnum, auto
-
-
-class PackStatus(StrEnum):
-    # TODO: поменять на статусы OFF_CHAIN и ON_CHAIN
-
-    IN_STOCK = auto()
-    OUT_OF_STOCK = auto()
-
-    @classmethod
-    def choices(cls):
-        results = []
-
-        for element in cls:
-            _element = (element.value, element.name.replace("_", " ").lower().capitalize())
-            results.append(_element)
-
-        return results
 
 
 class Pack(models.Model):
@@ -27,14 +9,13 @@ class Pack(models.Model):
     collection_name = models.CharField(max_length=255)
     contributor = models.CharField(max_length=255)
     floor_price = models.DecimalField(max_digits=20, decimal_places=3)
-    status = models.CharField(max_length=50, choices=PackStatus.choices(), default=PackStatus.OUT_OF_STOCK)
     image_url = models.ImageField(upload_to="packs/", blank=True, null=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.pack_name} {self.collection_name}"
 
     @property
-    def liquidity_count(self):
+    def liquidity_count(self) -> int:
         return self.liquidity_set.count()
 
 
@@ -44,10 +25,11 @@ class Liquidity(models.Model):
 
     pack = models.ForeignKey(Pack, models.CASCADE)
     number = models.IntegerField(null=False, blank=False)
+    nft_address = models.TextField()
     link = models.URLField(default="https://getgems.io/")
     in_case = models.BooleanField(default=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.pack} {self.number}"
 
 
@@ -60,7 +42,7 @@ class PackSell(models.Model):
     date = models.DateTimeField()
 
     @property
-    def price(self):
+    def price(self) -> float | None:
         if self.liquidity and self.liquidity.pack:
-            return self.liquidity.pack.floor_price
+            return float(self.liquidity.pack.floor_price)
         return None

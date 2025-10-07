@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Pack, Liquidity
+
+from .models import Liquidity, Pack
 
 
 @admin.register(Pack)

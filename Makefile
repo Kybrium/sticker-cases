@@ -54,3 +54,15 @@ bash-frontend:
 # ---- DB ----
 psql:
 	docker compose -f $(COMPOSE_FILE) exec db psql -U $$POSTGRES_USER -d $$POSTGRES_DB
+
+
+# ---- Dev ----
+check-backend:
+	python -m flake8 backend/cases backend/core backend/packs backend/users backend/wallet
+	python -m black --check backend/cases backend/core backend/packs backend/users backend/wallet
+	python -m isort --check backend/cases backend/core backend/packs backend/users backend/wallet
+	python -m mypy --exclude archive --check-untyped-defs backend/cases backend/core backend/packs backend/users backend/wallet
+
+format-backend:
+	python -m black backend/cases backend/core backend/packs backend/users backend/wallet
+	python -m isort backend/cases backend/core backend/packs backend/users backend/wallet
