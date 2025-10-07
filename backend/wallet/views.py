@@ -1,33 +1,59 @@
-import secrets
-from rest_framework.response import Response
-from rest_framework.request import Request
-from rest_framework import viewsets
-from rest_framework import status as drf_status
-from rest_framework.decorators import action
-from core.celery import celery_app
+import asyncio
 import base64
-from nacl.signing import VerifyKey
-from nacl.exceptions import BadSignatureError
-from users.models import CustomUser
-from django.shortcuts import get_object_or_404
 import datetime
-from django.utils import timezone
-from shared.cache import CacheService
-from .serializers import SignatureValidationSerializer
-from rest_framework.serializers import Serializer
-from enum import StrEnum
-from .models import Deposit
-from django.db.models import F
-import requests
-from tonsdk.utils import Address
+import json
+import os
+import secrets
 import time
 from decimal import Decimal
-from django.views.decorators.csrf import csrf_exempt
-import json
-from django.http import JsonResponse
+from enum import StrEnum
+from typing import Any
 
-AUTHORIZATION_TOKEN = "TC-INVOICE_a93fb0f16272e1a51f50c154489810927cdfbe20d03ffa9a825c48df53758fbe91"
+import aiohttp
+import requests
+from asgiref.sync import async_to_sync
+from django.db import transaction
+from django.db.models import F
+from django.http import HttpRequest, JsonResponse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from nacl.exceptions import BadSignatureError
+from nacl.signing import VerifyKey
+from packs.models import Liquidity, Pack
+from rest_framework import status as drf_status
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.serializers import BaseSerializer
+from shared.cache import CacheService
+from tonsdk.utils import Address  # type: ignore
+from tonutils.client import TonapiClient
+from tonutils.wallet import WalletV5R1
+from tonutils.wallet.messages import TransferNFTMessage
+from users.models import CustomUser, UserInventory
+
+from .models import Deposit, Withdrawal
+from .serializers import SignatureValidationSerializer, WalletSerializer
+
+PLUG = "plug plug plug plug plug plug plug plug plug plug plug plug"
 MAX_MESSAGE_AGE = 300
+IS_TESTNET: Any | None = os.getenv("IS_TESNET", PLUG)
+INVOICE_AUTHORIZATION_TOKEN: str | None = os.getenv("INVOICE_AUTHORIZATION_TOKEN", PLUG)
+MNEMONIC: str | None = os.getenv(
+    "MNEMONIC", PLUG
+)
+TONAPI_KEY: str | None = os.getenv("TONAPI_KEY", PLUG)
+
+if TONAPI_KEY is None:
+    raise ValueError("TONAPI_KEY переменная окружения обязательна")
+if MNEMONIC is None:
+    raise ValueError("MNEMONIC переменная окружения обязательна")
+if INVOICE_AUTHORIZATION_TOKEN is None:
+    raise ValueError("INVOICE_AUTHORIZATION_TOKEN переменная окружения обязательна")
+
+client = TonapiClient(api_key=TONAPI_KEY, is_testnet=IS_TESTNET, rps=1)  # type: ignore[arg-type]
+wallet, public_key, private_key, mnemonic = WalletV5R1.from_mnemonic(client, MNEMONIC)
 
 
 class InvoiceStatus(StrEnum):
@@ -35,10 +61,6 @@ class InvoiceStatus(StrEnum):
     CANCELLED = "cancelled"
     EXPIRED = "expired"
     PAID = "paid"
-
-
-class PlugSerializer(Serializer):
-    pass
 
 
 def verify_signature(public_key: str, message: str, signature: str) -> bool:
@@ -52,33 +74,104 @@ def verify_signature(public_key: str, message: str, signature: str) -> bool:
         return False
 
 
-class WalletAPIViewSet(viewsets.GenericViewSet):
-    serializer_class = PlugSerializer
+async def transfer_nft(
+        nft_address: str | None, new_owner_address: str | None
+) -> tuple[bool, str] | tuple[bool, Exception] | tuple[bool, None]:
+    # TODO: сделать проверку существует ли аддресс нфт
+    if not nft_address:
+        return False, "Переменная nft_address пуста"
+    if not new_owner_address:
+        return False, "Переменная new_owner_address пуста"
 
-    def get_serializer_class(self):
+    try:
+        sender_address = wallet.address.to_str(is_user_friendly=False)
+        tx_hash = await wallet.transfer_message(
+            message=TransferNFTMessage(destination=new_owner_address, nft_address=nft_address, amount=0.005),
+        )
+        async with aiohttp.ClientSession() as session:
+            while True:
+                response = await session.get(f"https://tonapi.io/v2/blockchain/transactions/{tx_hash}")
+                tx = await response.json()
+
+                try:
+                    if tx["error"]:
+                        await asyncio.sleep(5)
+                        continue
+                    break
+                except KeyError:
+                    break
+
+            success = (
+                    tx["success"] and not tx["aborted"] and tx["compute_phase"]["success"] and tx["action_phase"][
+                "success"]
+            )
+
+            if not success:
+                return False, "Транзакция отменена или не прошла"
+
+            out_msgs = tx.get("out_msgs", [])
+            nft_received = False
+            for msg in out_msgs:
+                if msg.get("decoded_op_name") == "nft_transfer":
+                    new_owner = msg["decoded_body"]["new_owner"]
+                    if new_owner == new_owner_address:
+                        nft_received = True
+                        break
+
+            if not nft_received:
+                return False, "NFT не дошла до адреса получателя"
+
+            response = await session.get(f"https://tonapi.io/v2/nfts/{nft_address}")
+            data = await response.json()
+
+            owner_address = data["owner"]["address"]
+            if owner_address == sender_address:
+                return False, "NFT не было отправлено"
+
+            return True, None
+
+    except Exception as e:
+        return False, e
+
+
+class WalletAPIViewSet(viewsets.GenericViewSet):
+    serializer_class = WalletSerializer
+
+    def get_serializer_class(self) -> type[BaseSerializer[Any]]:
         if self.action == "validate_signature":
             return SignatureValidationSerializer
         return super().get_serializer_class()
 
     @action(methods=["POST"], detail=False, url_path="get-nonce")
-    def get_nonce(self, request: Request):
+    def get_nonce(self, request: Request) -> Response:
         telegram_id = request.data.get("telegram_id")
         if not telegram_id:
-            return Response({"error": "Telegram id is not provided"}, drf_status.HTTP_400_BAD_REQUEST)
-        get_object_or_404(CustomUser, telegram_id=telegram_id)
+            return Response(
+                {"status": "error", "message": "Telegram id is not provided"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            CustomUser.objects.get(telegram_id=telegram_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Пользователь не найден"},
+                status=drf_status.HTTP_404_NOT_FOUND,
+            )
         cache = CacheService()
 
-        is_active = cache.get("active_nonces:{telegram_id}")
-        if is_active:
-            return Response({"error": "Nonce is already created"}, drf_status.HTTP_400_BAD_REQUEST)
+        if cache.get(f"active_nonces:{telegram_id}"):
+            return Response(
+                {"status": "error", "message": "Nonce is already created"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
 
         nonce = secrets.token_urlsafe(24)
         cache.set(f"active_nonces:{telegram_id}", {"nonce": nonce}, 300)
         cache.set(f"nonce:{telegram_id}:{nonce}", {"used": False}, 300)
-        return Response({"nonce": nonce}, drf_status.HTTP_200_OK)
+        return Response({"status": "success", "nonce": nonce}, status=drf_status.HTTP_200_OK)
 
     @action(methods=["POST"], detail=False, url_path="connect-wallet")
-    def validate_signature(self, request: Request):
+    def validate_signature(self, request: Request) -> Response:
         serializer = self.get_serializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
 
@@ -97,25 +190,45 @@ class WalletAPIViewSet(viewsets.GenericViewSet):
 
         cached_nonce = cache.get(key)
         if not cached_nonce:
-            return Response({"error": "Wrong telegram id or nonce is used"}, drf_status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"status": "error", "message": "Неверный Telegram ID или nonce"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
 
         if cached_nonce.get("used"):
-            return Response({"error": "Signature has already been used"}, drf_status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"status": "error", "message": "Эта подпись уже использована"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             ts = int(timestamp)
         except (ValueError, TypeError):
-            return Response({"error": "Invalid timestamp format"}, drf_status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"status": "error", "message": "Неверный формат timestamp"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
 
         current_ts = int(time.time())
         if abs(current_ts - ts) > MAX_MESSAGE_AGE:
-            return Response({"error": "Message timestamp is expired"}, drf_status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"status": "error", "message": "Timestamp в сообщении истек"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
 
-        is_valid = verify_signature(public_key, message, signature)
-        if not is_valid:
-            return Response({"error": "Signature is not valid"}, drf_status.HTTP_400_BAD_REQUEST)
+        if not verify_signature(public_key, message, signature):
+            return Response(
+                {"status": "error", "message": "Подпись недействительна"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
 
-        user = get_object_or_404(CustomUser, telegram_id=telegram_id)
+        try:
+            user = CustomUser.objects.get(telegram_id=telegram_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Пользователь не найден"},
+                status=drf_status.HTTP_404_NOT_FOUND,
+            )
         naive_dt = datetime.datetime.fromtimestamp(ts)
         aware_dt = timezone.make_aware(naive_dt)
 
@@ -124,12 +237,26 @@ class WalletAPIViewSet(viewsets.GenericViewSet):
         user.save()
 
         cache.set(key, {"used": True}, 86400)
-        return Response({"message": "Wallet connected successfully"}, drf_status.HTTP_200_OK)
+        return Response(
+            {"status": "success", "message": "Кошелек успешно подключен"},
+            status=drf_status.HTTP_200_OK,
+        )
 
     @action(methods=["POST"], detail=False, url_path="create-invoice")
-    def create_invoice(self, request: Request):
+    def create_invoice(self, request: Request) -> Response:
         telegram_id = request.data.get("telegram_id")
-        get_object_or_404(CustomUser, telegram_id=telegram_id)
+        if not telegram_id:
+            return Response(
+                {"status": "error", "message": "Telegram ID не предоставлен"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            CustomUser.objects.get(telegram_id=telegram_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Пользователь не найден"},
+                status=drf_status.HTTP_404_NOT_FOUND,
+            )
 
         cache = CacheService()
         active_invoice = cache.get(f"active_invoices:{telegram_id}")
@@ -139,31 +266,39 @@ class WalletAPIViewSet(viewsets.GenericViewSet):
             invoice_data = cache.get(invoice_key)
             return Response(
                 {
-                    "message": "Invoice already exists",
+                    "status": "success",
+                    "message": "Инвойс уже существует",
                     "address_to_pay": invoice_data.get("address"),
                     "invoice_id": invoice_data.get("invoice_id"),
-                    "status": invoice_data.get("status"),
+                    "status_invoice": invoice_data.get("status"),
                 },
-                drf_status.HTTP_400_BAD_REQUEST
+                status=drf_status.HTTP_200_OK,
             )
         payload = {
             "amount": "100000000",
             "life_time": 86400,
             "description": str(telegram_id),
-            "currency": "TON"
+            "currency": "TON",
         }
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {AUTHORIZATION_TOKEN}"}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {INVOICE_AUTHORIZATION_TOKEN}",
+        }
 
         response = requests.post(
             "https://tonconsole.com/api/v1/services/invoices/invoice",
             json=payload,
-            headers=headers
+            headers=headers,
         )
 
         if response.status_code != 201:
             return Response(
-                {"error": "Something went wrong with ton console API", "detail": response.text},
-                drf_status.HTTP_400_BAD_REQUEST
+                {
+                    "status": "error",
+                    "message": "Ошибка при создании инвойса через Tonconsole API",
+                    "detail": response.text,
+                },
+                status=drf_status.HTTP_400_BAD_REQUEST,
             )
 
         data = response.json()
@@ -182,56 +317,189 @@ class WalletAPIViewSet(viewsets.GenericViewSet):
             ttl = 0
 
         cache.set(f"active_invoices:{telegram_id}", {"key": key}, 86400)
-        cache.set(key, {"status": InvoiceStatus.PENDING, "invoice_id": invoice_id, "address": address}, ttl)
+        cache.set(
+            key,
+            {
+                "status": InvoiceStatus.PENDING,
+                "invoice_id": invoice_id,
+                "address": address,
+            },
+            ttl,
+        )
 
         return Response(
-            {"message": "Invoice created", "address_to_pay": address, "invoice_id": invoice_id},
-            drf_status.HTTP_200_OK
+            {
+                "status": "success",
+                "message": "Инвойс создан",
+                "address_to_pay": address,
+                "invoice_id": invoice_id,
+            },
+            status=drf_status.HTTP_200_OK,
         )
 
     @action(detail=False, methods=["POST"], url_path="check-deposit")
-    def check_deposit(self, request: Request):
+    def check_deposit(self, request: Request) -> Response:
         telegram_id = str(request.data.get("telegram_id"))
+        if not telegram_id:
+            return Response(
+                {"status": "error", "message": "Telegram ID не предоставлен"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
         cache = CacheService()
         active_invoice_key = f"active_invoices:{str(telegram_id)}"
         try:
             key = cache.get(active_invoice_key)["key"]
         except TypeError:
-            return JsonResponse({"error": "Invoice is not exist"}, status=400)
+            return Response(
+                {"status": "error", "message": "Инвойс не существует"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
 
         user_invoice = cache.get(key)
         if not user_invoice:
-            return Response({"error": "Invoice is expired"}, drf_status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"status": "error", "message": "Инвойс истёк"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
 
         invoice_id = user_invoice["invoice_id"]
         invoice_status = user_invoice["status"]
 
         if invoice_status == InvoiceStatus.PENDING:
-            return Response({"message": "Invoice is pending", "status": InvoiceStatus.PENDING,
-                             "invoice_id": invoice_id}, drf_status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "status": "success",
+                    "message": "Инвойс ожидает оплаты",
+                    "invoice_status": InvoiceStatus.PENDING,
+                    "invoice_id": invoice_id,
+                },
+                status=drf_status.HTTP_200_OK,
+            )
 
         elif invoice_status == InvoiceStatus.CANCELLED:
             cache.delete(key)
             cache.delete(active_invoice_key)
-            return Response({"error": "Invoice is cancelled", "status": InvoiceStatus.CANCELLED},
-                            drf_status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "status": "error",
+                    "message": "Инвойс отменён",
+                    "invoice_status": InvoiceStatus.CANCELLED,
+                },
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
 
         elif invoice_status == InvoiceStatus.PAID:
-            user = get_object_or_404(CustomUser, telegram_id=telegram_id)
-            balance = user.balance
+            try:
+                user = CustomUser.objects.get(telegram_id=telegram_id)
+            except CustomUser.DoesNotExist:
+                return Response(
+                    {"status": "error", "message": "Пользователь не найден"},
+                    status=drf_status.HTTP_404_NOT_FOUND,
+                )
             cache.delete(key)
             cache.delete(active_invoice_key)
-            return Response({"message": "Invoice is paid", "status": InvoiceStatus.PAID, "new_balance": balance},
-                            drf_status.HTTP_200_OK)
+            return Response(
+                {
+                    "status": "success",
+                    "message": "Инвойс оплачен",
+                    "invoice_status": InvoiceStatus.PAID,
+                    "new_balance": user.balance,
+                },
+                status=drf_status.HTTP_200_OK,
+            )
 
-        return Response({"error": "Unknown invoice status", "status": invoice_status, "invoice_id": invoice_id},
-                        drf_status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "status": "error",
+                "message": "Неизвестный статус инвойса",
+                "invoice_status": invoice_status,
+                "invoice_id": invoice_id,
+            },
+            status=drf_status.HTTP_400_BAD_REQUEST,
+        )
+
+    @action(detail=False, methods=["POST"], url_path="withdrawal")
+    def withdrawal_nft(self, request: Request) -> Response:  # noqa: C901
+        required_fields = [
+            "telegram_id",
+            "pack_name",
+            "collection_name",
+            "contributor",
+            "number",
+        ]
+        for field in required_fields:
+            if not request.data.get(field):
+                return Response(
+                    {"status": "error", "message": f"Поле '{field}' обязательно"},
+                    status=drf_status.HTTP_400_BAD_REQUEST,
+                )
+        telegram_id = request.data.get("telegram_id")
+        pack_name = request.data.get("pack_name")
+        collection_name = request.data.get("collection_name")
+        contributor = request.data.get("contributor")
+        number: Any = request.data.get("number")
+
+        try:
+            pack = Pack.objects.get(
+                pack_name=pack_name,
+                collection_name=collection_name,
+                contributor=contributor,
+            )
+        except Pack.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Пак не найден"},
+                status=drf_status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            liquidity = Liquidity.objects.get(pack=pack, number=number)
+        except Liquidity.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Ликвидность не найдена"},
+                status=drf_status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            user = CustomUser.objects.get(telegram_id=telegram_id)
+        except CustomUser.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Пользователь не найден"},
+                status=drf_status.HTTP_404_NOT_FOUND,
+            )
+
+        if not UserInventory.objects.filter(user=user, liquidity=liquidity).exists():
+            return Response(
+                {"status": "error", "message": "Стикер не принадлежит пользователю"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        transfered, e = async_to_sync(transfer_nft)(liquidity.nft_address, user.wallet)
+        if not transfered:
+            return Response(
+                {"status": "error", "message": f"Не удалось вывести NFT: {e}"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            try:
+                Withdrawal.objects.create(user=user, pack=pack, date=timezone.now(), sum=pack.floor_price)
+                liquidity.delete()
+            except Exception as e:
+                return Response(
+                    {"status": "error", "message": f"Ошибка при выводе: {e}"},
+                    status=drf_status.HTTP_400_BAD_REQUEST,
+                )
+
+        return Response(
+            {"status": "success", "message": "NFT выведено успешно"},
+            status=drf_status.HTTP_200_OK,
+        )
 
 
 @csrf_exempt
-def tonconsole_webhook(request: Request):
+def tonconsole_webhook(request: HttpRequest) -> JsonResponse:  # noqa: C901
     if request.method != "POST":
-        return JsonResponse({"error": "Only POST allowed"}, status=405)
+        return JsonResponse({"status": "error", "message": "Разрешён только POST"}, status=405)
     if request.content_type == "application/json":
         data = json.loads(request.body)
     else:
@@ -246,45 +514,69 @@ def tonconsole_webhook(request: Request):
     if invoice_status == InvoiceStatus.CANCELLED:
         ttl = cache.get_ttl(key)
         if not ttl:
-            return JsonResponse({"error": "Invoice is not exist", "invoice_id": invoice_id},
-                                status=drf_status.HTTP_400_BAD_REQUEST)
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": "Инвойс не существует",
+                    "invoice_id": invoice_id,
+                },
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
         cache.set(key, {"status": InvoiceStatus.CANCELLED, "invoice_id": invoice_id}, ttl)
-        return JsonResponse({"message": "Invoice is cancelled"}, status=drf_status.HTTP_200_OK)
+        return JsonResponse({"status": "success", "message": "Инвойс отменён"}, status=200)
 
     elif invoice_status == InvoiceStatus.EXPIRED:
         cache.delete(key)
-        return JsonResponse({"message": "Invoice is expired"}, status=drf_status.HTTP_200_OK)
+        return JsonResponse({"status": "success", "message": "Инвойс истёк"}, status=200)
 
     elif invoice_status == InvoiceStatus.PAID:
         try:
             amount = Decimal(str(data.get("amount", "0")))
             overpayment = Decimal(str(data.get("overpayment", "0")))
             deposit_sum = amount + overpayment
-            raw_wallet = data.get("paid_by_address")  # TODO: сделать проверку с какого коша была оплата
         except (ValueError, TypeError) as e:
-            return JsonResponse({"error": "Error while extracting values", "detail": e},
-                                status=drf_status.HTTP_400_BAD_REQUEST)
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": "Ошибка при обработке депозита",
+                    "detail": str(e),
+                },
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
 
-        is_active = cache.get(key)
-        if not is_active:
-            return JsonResponse({"error": "Invoice is not exist"}, status=drf_status.HTTP_400_BAD_REQUEST)
+        if not cache.get(key):
+            return JsonResponse(
+                {"status": "error", "message": "Инвойс не существует"},
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
 
-        user = get_object_or_404(CustomUser, telegram_id=int(telegram_id))
+        try:
+            user = CustomUser.objects.get(telegram_id=telegram_id)
+        except CustomUser.DoesNotExist:
+            return JsonResponse(
+                {"status": "error", "message": "Пользователь не найден"},
+                status=drf_status.HTTP_404_NOT_FOUND,
+            )
         user.balance = F("balance") + deposit_sum
         user.save(update_fields=["balance"])
         user.refresh_from_db()
 
-        Deposit.objects.create(
-            user=user,
-            sum=deposit_sum,
-            date=timezone.now()
-        )
+        Deposit.objects.create(user=user, sum=deposit_sum, date=timezone.now())
 
         ttl = cache.get_ttl(key)
         if not ttl:
-            return JsonResponse({"error": "Invoice is not exist", "invoice_id": invoice_id},
-                                status=drf_status.HTTP_400_BAD_REQUEST)
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": "Инвойс не существует",
+                    "invoice_id": invoice_id,
+                },
+                status=drf_status.HTTP_400_BAD_REQUEST,
+            )
         cache.set(key, {"status": InvoiceStatus.PAID, "invoice_id": invoice_id}, ttl)
-        return JsonResponse({"message": "Invoice successfully paid"}, status=drf_status.HTTP_200_OK)
+        return JsonResponse({"status": "success", "message": "Инвойс успешно оплачен"}, status=200)
 
-    return JsonResponse({"error": "Wrong invoice status provided"}, status=drf_status.HTTP_400_BAD_REQUEST)
+    return JsonResponse(
+        {"status": "error", "message": "Неверный статус инвойса"},
+        status=drf_status.HTTP_400_BAD_REQUEST,
+    )

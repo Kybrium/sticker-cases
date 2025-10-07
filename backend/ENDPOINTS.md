@@ -435,6 +435,8 @@ wallet=v-syrom-formate-kosh&telegram_id=213123123&timestamp=1600002213&nonce=e4w
 
 ````
 
+3. POST /api/wallet/withdrawal/
+
 ***Response:***
 
 ````

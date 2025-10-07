@@ -1,10 +1,11 @@
 from django.contrib import admin
+
 from .models import CustomUser, UserInventory
 
 
 @admin.register(CustomUser)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ["username", "telegram_id", "status"]
+    list_display = ["username", "telegram_id"]
 
 
 @admin.register(UserInventory)

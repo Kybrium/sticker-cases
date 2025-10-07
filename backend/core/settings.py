@@ -1,5 +1,6 @@
-from pathlib import Path
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,68 +25,64 @@ ALLOWED_HOSTS = HOSTS
 
 INSTALLED_APPS = [
     # Native Django
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
     # Third party
     "rest_framework",
     "corsheaders",
-
+    "drf_spectacular",
     # Apps
     "cases",
     "packs",
     "users",
-    "wallet"
+    "wallet",
 ]
 
 # MIDDLEWARE THE ORDER IS IMPORTANT!!!!!!!
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'core.urls'
+ROOT_URLCONF = "core.urls"
 
 # TEMPLATES FOR EMAILS OR ANYTHING ELSE
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'core.wsgi.application'
+WSGI_APPLICATION = "core.wsgi.application"
 
 # DB SETUP
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-
         "NAME": os.getenv("DB_NAME", "sticker_cases"),
         "USER": os.getenv("DB_USER", "postgres"),
         "PASSWORD": os.getenv("DB_PASSWORD", "qwerty"),
         "HOST": os.getenv("DB_HOST", "localhost"),
         "PORT": os.getenv("DB_PORT", "5432"),
-
         # helpful timeouts for dev
         "CONN_MAX_AGE": 0,  # 0 = no persistent connections
         "OPTIONS": {},  # extra psycopg options if needed later
@@ -95,30 +92,30 @@ DATABASES = {
 # PASS VALIDATION DEFAULT OF DJANGO
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
-AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = "users.CustomUser"
 
 # INTERNALIZATION
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
 # STATIC SETUP
-STATIC_URL = 'static/'
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+STATIC_URL = "static/"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
@@ -134,14 +131,16 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination"
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 CORS_ALLOWED_ORIGINS = HOSTS_URLS
 CSRF_TRUSTED_ORIGINS = HOSTS_URLS
 
-CELERY_BROKER_URL = os.getenv("DJANGO_BROKER_URL",
-                              default="redis://localhost:6379/0")  # вместо localhost название сервиса
+CELERY_BROKER_URL = os.getenv(
+    "DJANGO_BROKER_URL", default="redis://localhost:6379/0"
+)  # вместо localhost название сервиса
 CELERY_ACCEPT_CONTENT = [
     "pickle",
     "application/json",
@@ -157,40 +156,53 @@ CACHES = {
         "LOCATION": "redis://127.0.0.1:6379/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
+        },
     }
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Sticker Cases API",
+    "DESCRIPTION": "Свага для фронта",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
 }
 
 # ========================= Startup Dashboard (Rich + PyFiglet) =========================
 if os.environ.get("RUN_MAIN") == "true":
-    import socket
     import getpass
-    import django
     import platform
+    import socket
+
+    import django
     import pyfiglet
+    from rich import box
+    from rich.columns import Columns
     from rich.console import Console
     from rich.panel import Panel
     from rich.table import Table
-    from rich.columns import Columns
-    from rich import box
 
     console = Console()
 
+    def yes_no(val: bool) -> str:  # noqa: E303
+        return f"[green]Yes[/green]" if val else "[red]No[/red]"  # noqa: F541
 
-    # --------- Helpers ---------
-    def yes_no(val: bool) -> str:
-        return f"[green]Yes[/green]" if val else "[red]No[/red]"
-
-
-    def list_to_columns(items, title=None, color="cyan"):
+    def list_to_columns(items: list, title: str | None = None, color: str = "cyan") -> Panel:  # noqa: E303
         if not items:
-            return Panel.fit("[dim]— none —[/dim]", title=title, border_style="grey37", box=box.ROUNDED)
+            return Panel.fit(
+                "[dim]— none —[/dim]",
+                title=title,
+                border_style="grey37",
+                box=box.ROUNDED,
+            )
         bullets = [f"[{color}]•[/] {i}" for i in items]
-        return Panel.fit(Columns(bullets, equal=True, expand=True), title=title, border_style="grey37", box=box.ROUNDED)
+        return Panel.fit(
+            Columns(bullets, equal=True, expand=True),
+            title=title,
+            border_style="grey37",
+            box=box.ROUNDED,
+        )
 
-
-    # --------- Facts ---------
-    mode = "DEV" if DEBUG else "PROD"
+    mode = "DEV" if DEBUG else "PROD"  # noqa: E303
     color = "green" if DEBUG else "red"
 
     py_ver = platform.python_version()
@@ -231,7 +243,10 @@ if os.environ.get("RUN_MAIN") == "true":
     info.add_row("Local IP", f"[cyan]{local_ip}[/cyan]")
     if lan_ip:
         info.add_row("LAN IP (env)", f"[cyan]{lan_ip}[/cyan]")
-        info.add_row("LAN URLs", f"[cyan]http://{lan_ip}:3000[/cyan]  |  [cyan]http://{lan_ip}:8000[/cyan]")
+        info.add_row(
+            "LAN URLs",
+            f"[cyan]http://{lan_ip}:3000[/cyan]  |  [cyan]http://{lan_ip}:8000[/cyan]",
+        )
 
     info.add_row("Allowed Hosts", f"[yellow]{', '.join(ALLOWED_HOSTS) or '—'}[/yellow]")
     info.add_row("CORS Origins", f"[yellow]{', '.join(CORS_ALLOWED_ORIGINS) or '—'}[/yellow]")
@@ -253,16 +268,30 @@ if os.environ.get("RUN_MAIN") == "true":
     )
 
     # --------- Detailed Panels ---------
-    console.print(Columns([
-        list_to_columns(native_apps, title="[bold]Django Built-ins[/bold]", color="cyan"),
-        list_to_columns(third_party_apps, title="[bold]Third-party & Local Apps[/bold]", color="green")
-    ], expand=True))
+    console.print(
+        Columns(
+            [
+                list_to_columns(native_apps, title="[bold]Django Built-ins[/bold]", color="cyan"),
+                list_to_columns(
+                    third_party_apps,
+                    title="[bold]Third-party & Local Apps[/bold]",
+                    color="green",
+                ),
+            ],
+            expand=True,
+        )
+    )
 
     if MIDDLEWARE:
         mw_table = Table.grid(padding=(0, 1))
         for i, mw in enumerate(MIDDLEWARE):
             mw_table.add_row(f"[white]{i + 1:02}.[/] {mw}")
         console.print(
-            Panel.fit(mw_table, title="[bold]Middleware Order[/bold]", border_style="grey37", box=box.ROUNDED)
+            Panel.fit(
+                mw_table,
+                title="[bold]Middleware Order[/bold]",
+                border_style="grey37",
+                box=box.ROUNDED,
+            )
         )
     # ==============================================================================

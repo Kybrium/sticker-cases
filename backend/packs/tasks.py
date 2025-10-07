@@ -1,16 +1,19 @@
 import asyncio
+import os
+from typing import Any, Optional
+
 import aiohttp
 from core.celery import celery_app
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 
 
 @celery_app.task
-def update_sticker_prices_task():
+def update_sticker_prices_task() -> None:
     asyncio.run(update_sticker_prices())
 
 
-async def update_sticker_prices():
+async def update_sticker_prices() -> None:
     async with aiohttp.ClientSession() as client:
         response = await client.get("https://stickers.tools/api/stats-new")
         data = await response.json()
@@ -18,7 +21,7 @@ async def update_sticker_prices():
 
         sticker_pack = await update_packs_prices_sticker_bot(collections, client)
 
-        packs_to_update = dict()
+        packs_to_update: dict = dict()
 
         for d in sticker_pack:
             for collection, packs in d.items():
@@ -26,20 +29,25 @@ async def update_sticker_prices():
                     packs_to_update[collection] = {}
                 packs_to_update[collection].update(packs)
 
-        await client.patch(f"{BASE_URL}/api/packs/update-stickers-price/",
-                           json={"packs_data": packs_to_update})
+        await client.patch(
+            f"{BASE_URL}/api/packs/update-stickers-price/",
+            json={"packs_data": packs_to_update},
+        )
         await calculate_cases_price()
 
 
-async def update_packs_prices_sticker_bot(collections, client):
+async def update_packs_prices_sticker_bot(collections: dict, client: aiohttp.ClientSession) -> list:
     """
     Обновляет цены на стикеры из коллекций выпущенных @sticker_bot
     :return:
     """
     response = await client.get(f"{BASE_URL}/api/packs/contributor/?contributor=Sticker Pack")
-    packs = await response.json()
-    pack_names = [p["pack_name"] for p in packs]
-    pack_collections = [c["collection_name"] for c in packs]
+
+    packs: dict = await response.json()
+    items = packs["items"]
+
+    pack_names = [p["pack_name"] for p in items]
+    pack_collections = [c["collection_name"] for c in items]
 
     packs_to_update = []
     for col_data in collections.values():
@@ -64,7 +72,7 @@ async def update_packs_prices_sticker_bot(collections, client):
 """
 
 
-async def adjust_case_price(items_dict, base_fee, percent=5):
+async def adjust_case_price(items_dict: dict, base_fee: float, percent: int = 5) -> tuple[float, float]:
     EV = sum(v["price"] * v["chance"] for v in items_dict.values())
     min_fee = base_fee - base_fee * percent / 100
     max_fee = base_fee + base_fee * percent / 100
@@ -80,11 +88,9 @@ async def adjust_case_price(items_dict, base_fee, percent=5):
     return case_price_new, new_fee
 
 
-def _rebalance_probs_greedy(prices, probs, target_ev, min_p, max_p, eps=1e-9):
-    """
-    Greedy redistribution: переносим вероятность между парой (дорогой <-> дешёвый),
-    чтобы EV приблизить к target_ev. Возвращает (new_probs, new_ev).
-    """
+def _rebalance_probs_greedy(  # noqa: C901
+    prices: list[float], probs: list[float], target_ev: float, min_p: float, max_p: float, eps: float = 1e-9
+) -> tuple[list[float], float]:
     n = len(prices)
     p = probs[:]
     ev = sum(prices[i] * p[i] for i in range(n))
@@ -147,7 +153,14 @@ def _rebalance_probs_greedy(prices, probs, target_ev, min_p, max_p, eps=1e-9):
     return p, ev
 
 
-async def rebalance_chances(items, case_price, base_fee, case_name, percent=5, max_iter=100):
+async def rebalance_chances(  # noqa: C901
+    items: dict[str, dict[str, Any]],
+    case_price: float,
+    base_fee: float,
+    case_name: str,
+    percent: int = 5,
+    max_iter: int = 100,
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, dict[str, float]]]:  # noqa: C901
     """
     Распределение шансов с категориями и контролем EV/фи.
     Поддерживаются несколько cheap и expensive паков.
@@ -159,7 +172,7 @@ async def rebalance_chances(items, case_price, base_fee, case_name, percent=5, m
     n = len(prices)
 
     # --- Категории ---
-    categories = [None] * n
+    categories: list[Optional[str]] = [None] * n
     min_price, max_price = min(prices), max(prices)
     for i in range(n):
         if prices[i] == min_price:
@@ -178,29 +191,38 @@ async def rebalance_chances(items, case_price, base_fee, case_name, percent=5, m
 
     for i, cat in enumerate(categories):
         if cat == "cheap":
-            items[names[i]]['chance'] = CATEGORY['cheap']['max']
+            items[names[i]]["chance"] = CATEGORY["cheap"]["max"]
         else:
-            items[names[i]]['chance'] = CATEGORY[cat]['min']
+            items[names[i]]["chance"] = CATEGORY[cat]["min"]  # type: ignore[index]
 
-    def compute_chances(prices, categories, CATEGORY):
+    def compute_chances(categories: list, CATEGORY: dict[str, dict[str, float]]) -> list[float]:
         names_local = list(items.keys())
-        p = [items[n]['chance'] for n in names_local]
+        p = [items[n]["chance"] for n in names_local]
         main_cheap_indices = [i for i, c in enumerate(categories) if c == "cheap"]
         remaining_indices = [i for i in range(len(p)) if i not in main_cheap_indices]
 
         remaining_total = 1 - sum(p[i] for i in main_cheap_indices)
-        weights = [CATEGORY[categories[i]]['weight'] for i in remaining_indices]
+        weights = [CATEGORY[categories[i]]["weight"] for i in remaining_indices]
         weight_sum = sum(weights) or 1
 
         for i, w in zip(remaining_indices, weights):
             chance = w / weight_sum * remaining_total
             cat = categories[i]
-            p[i] = max(CATEGORY[cat]['min'], min(chance, CATEGORY[cat]['max']))
+            p[i] = max(CATEGORY[cat]["min"], min(chance, CATEGORY[cat]["max"]))
 
         total = sum(p)
         return [x / total for x in p]
 
-    def greedy_adjust(prices, chances, categories, CATEGORY, target_ev, eps=1e-9, max_iter=100, max_delta=0.05):
+    def greedy_adjust(
+        prices: list[float],
+        chances: list[float],
+        categories: list[str | None],
+        CATEGORY: dict[str, dict[str, float]],
+        target_ev: float,
+        eps: float = 1e-9,
+        max_iter: int = 100,
+        max_delta: float = 0.05,
+    ) -> tuple[list[float], float]:
         p = chances[:]
         n = len(p)
         ev = sum(prices[i] * p[i] for i in range(n))
@@ -219,8 +241,8 @@ async def rebalance_chances(items, case_price, base_fee, case_name, percent=5, m
                     if prices[j] <= prices[i]:
                         continue
 
-                    room_i = CATEGORY[categories[i]]["max"] - p[i]
-                    avail_j = p[j] - CATEGORY[categories[j]]["min"]
+                    room_i = CATEGORY[categories[i]]["max"] - p[i]  # type: ignore[index]
+                    avail_j = p[j] - CATEGORY[categories[j]]["min"]  # type: ignore[index]
                     if room_i <= eps or avail_j <= eps:
                         continue
 
@@ -239,14 +261,14 @@ async def rebalance_chances(items, case_price, base_fee, case_name, percent=5, m
             # Clamp после каждой итерации
             for k in range(n):
                 cat = categories[k]
-                p[k] = max(CATEGORY[cat]["min"], min(p[k], CATEGORY[cat]["max"]))
+                p[k] = max(CATEGORY[cat]["min"], min(p[k], CATEGORY[cat]["max"]))  # type: ignore[index]
 
         total = sum(p)
         return [x / total for x in p], ev
 
     # --- Основной цикл до попадания fee в диапазон ---
     for _ in range(30):  # кол-во попыток для попадания в диапазон
-        chances_list = compute_chances(prices, categories, CATEGORY)
+        chances_list = compute_chances(categories, CATEGORY)
         target_ev = case_price * (1 - base_fee / 100)
         chances_list, EV = greedy_adjust(prices, chances_list, categories, CATEGORY, target_ev, max_iter=max_iter)
 
@@ -260,30 +282,34 @@ async def rebalance_chances(items, case_price, base_fee, case_name, percent=5, m
         case_price = round((case_price_min + case_price_max) / 2 * 2) / 2
 
     # --- Обновление шансов и цены в БД ---
-    chances_to_update = {}
-    for i, n in enumerate(names):
-        items[n]['chance'] = chances_list[i]
+    chances_to_update: dict = {}
+    for i, n in enumerate(names):  # type: ignore[assignment]
+        items[n]["chance"] = chances_list[i]  # type: ignore[index]
         # создаём список паков для каждого кейса
         chances_to_update.setdefault(str(case_name), [])
-        chances_to_update[str(case_name)].append({
-            "pack_name": str(n),
-            "collection_name": str(items[n]["collection_name"]),
-            "chance": chances_list[i]
-        })
+        chances_to_update[str(case_name)].append(
+            {
+                "pack_name": str(n),
+                "collection_name": str(items[n]["collection_name"]),  # type: ignore[index]
+                "chance": chances_list[i],
+            }
+        )
 
     print(
-        f"[rebalance] Кейc {case_name}: финальные шансы = {[(n, round(items[n]['chance'], 4)) for n in names]}, fee = {new_fee:.2f}%, цена = {case_price:.2f}")
+        f"[rebalance] Кейc {case_name}: финальные шансы = {[(n, round(items[n]['chance'], 4)) for n in names]}, "
+        f"fee = {new_fee:.2f}%, цена = {case_price:.2f}"
+    )
     return chances_to_update, {str(case_name): {"price": case_price, "fee": new_fee}}
 
 
-async def check_new_fee(new_fee, base_fee=20, percent=5):
+async def check_new_fee(new_fee: float, base_fee: float = 20, percent: int = 5) -> bool:
     tolerance = base_fee * percent / 100
     low = base_fee - tolerance
     high = base_fee + tolerance
     return low <= new_fee <= high
 
 
-async def calculate_cases_price():
+async def calculate_cases_price() -> None:
     async with aiohttp.ClientSession() as client:
         response = await client.get(f"{BASE_URL}/api/cases/")
 
@@ -295,23 +321,25 @@ async def calculate_cases_price():
             print("API лег с 500")
             return
 
-        cases = await response.json()
+        cases_response = await response.json()
+        cases = cases_response.get("items", [])
 
-        chances_to_update = {}
-        cases_to_update = {}
+        chances_to_update: dict = {}
+        cases_to_update: dict = {}
         for case in cases:
             case_price = float(case.get("price"))
             case_name = case.get("name")
             case_base_fee = float(case.get("base_fee"))
 
             response = await client.get(f"{BASE_URL}/api/cases/case/{case_name}/")
-            items = await response.json()
+            case_response = await response.json()
+            items = case_response.get("items", [])
 
             items_dict = {
-                d['pack_name']: {
-                    "price": float(d['pack_floor_price']),
-                    "chance": float(d['chance']),
-                    "collection_name": d["collection_name"]
+                d["pack_name"]: {
+                    "price": float(d["pack_floor_price"]),
+                    "chance": float(d["chance"]),
+                    "collection_name": d["collection_name"],
                 }
                 for d in items
             }
@@ -325,9 +353,7 @@ async def calculate_cases_price():
                     cases_to_update[case_name] = {}
                 cases_to_update[case_name] = {"fee": current_fee}
             else:
-                chance_updates, case_updates = await rebalance_chances(
-                    items_dict, case_price, case_base_fee, case_name
-                )
+                chance_updates, case_updates = await rebalance_chances(items_dict, case_price, case_base_fee, case_name)
 
                 chances_to_update.update(chance_updates)
                 cases_to_update.update(case_updates)

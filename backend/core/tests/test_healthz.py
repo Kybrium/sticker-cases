@@ -1,6 +1,7 @@
 from rest_framework.test import APIClient
 
-def test_healthz_ok(db):
+
+def test_healthz_ok(db: None) -> None:
     client = APIClient()
     res = client.get("/healthz/")
     assert res.status_code == 200

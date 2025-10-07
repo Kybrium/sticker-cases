@@ -1,11 +1,12 @@
 from rest_framework import serializers
+
 from .models import Case, CaseItem
 
 
 class CaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Case
-        fields = ["name", "price", "image_url", "base_fee"]
+        fields = ["name", "price", "image_url", "base_fee", "status"]
 
 
 class CaseItemSerializer(serializers.ModelSerializer):
@@ -18,4 +19,11 @@ class CaseItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CaseItem
-        fields = ["pack_name", "collection_name", "pack_image", "chance", "case_name", "pack_floor_price"]
+        fields = [
+            "pack_name",
+            "collection_name",
+            "pack_image",
+            "chance",
+            "case_name",
+            "pack_floor_price",
+        ]

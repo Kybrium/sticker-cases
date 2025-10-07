@@ -1,5 +1,6 @@
-from django.db import models
 from enum import StrEnum, auto
+
+from django.db import models
 
 
 class CaseStatus(StrEnum):
@@ -8,11 +9,14 @@ class CaseStatus(StrEnum):
     OUT_OF_STICKERS = auto()  # закончилась ликвидность
 
     @classmethod
-    def choices(cls):
+    def choices(cls) -> list:
         results = []
 
         for element in cls:
-            _element = (element.value, element.name.replace("_", " ").lower().capitalize())
+            _element = (
+                element.value,
+                element.name.replace("_", " ").lower().capitalize(),
+            )
             results.append(_element)
 
         return results
@@ -29,7 +33,7 @@ class Case(models.Model):
     status = models.CharField(max_length=50, choices=CaseStatus.choices(), default=CaseStatus.INACTIVE)
     image_url = models.ImageField(upload_to="cases/", blank=True, null=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -60,7 +64,7 @@ class CaseOpen(models.Model):
     date = models.DateTimeField()
 
     @property
-    def price(self):
+    def price(self) -> float | None:
         if self.drop and self.drop.pack:
-            return self.drop.pack.floor_price
+            return float(self.drop.pack.floor_price)
         return None

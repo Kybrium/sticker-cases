@@ -1,7 +1,8 @@
-from django.http import JsonResponse
 from django.db import connection
+from django.http import HttpRequest, JsonResponse
 
-def healthz(_request):
+
+def healthz(_request: HttpRequest) -> JsonResponse:
     try:
         with connection.cursor() as cur:
             cur.execute("SELECT 1;")
