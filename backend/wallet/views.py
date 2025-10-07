@@ -43,7 +43,7 @@ INVOICE_AUTHORIZATION_TOKEN: str | None = os.getenv("INVOICE_AUTHORIZATION_TOKEN
 MNEMONIC: str | None = os.getenv(
     "MNEMONIC", PLUG
 )
-TONAPI_KEY: str | None = os.getenv("TONAPI_KEY")
+TONAPI_KEY: str | None = os.getenv("TONAPI_KEY", PLUG)
 
 if TONAPI_KEY is None:
     raise ValueError("TONAPI_KEY переменная окружения обязательна")
