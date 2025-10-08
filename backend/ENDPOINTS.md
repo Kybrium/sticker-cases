@@ -317,7 +317,7 @@ GET: Если не указывать, никакой логике на серв
 
 ### users
 
-1. GET /api/users/{telegram_id}
+1. GET /api/users/user/{telegram_id}
 
 ***Response:***
 
@@ -337,7 +337,7 @@ GET: Если не указывать, никакой логике на серв
 
 Получить информацию о пользователе
 
-2. GET /api/users/{telegram_id}/inventory/
+2. GET /api/users/user/{telegram_id}/inventory/
 
 ***Response:***
 
@@ -359,7 +359,7 @@ GET: Если не указывать, никакой логике на серв
 
 Получить инвентарь пользователя
 
-3. GET /api/users/{telegram_id}/transactions/
+3. GET /api/users/user/{telegram_id}/transactions/
 
 ***Response:***
 
@@ -394,6 +394,23 @@ GET: Если не указывать, никакой логике на серв
 Возвращает все транзакции совершенные пользователем отсортированно по времени (депозит, вывод, открытие кейса, продажа
 стикера.)
 
+4. POST /api/users/user/
+
+***Request:***
+
+````
+{
+    "telegram_id": user_id,
+    "first_name": first_name,
+    "last_name": last_name,
+    "username": username,
+    "language": language_code,
+    "is_bot": is_bot,
+    "image_url": None
+}
+````
+
+При нажатии /start в боте на этом эндпоинте создается юзер. `image_url` это ссылка на аватарку пользователя в бакете S3.
 
 ****
 

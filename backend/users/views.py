@@ -1,125 +1,55 @@
-import json
-import os
 from itertools import chain
 from operator import attrgetter
 
 from cases.models import CaseOpen
-from django.contrib.auth import login, logout
 from django.db.models import QuerySet
-from django.utils import timezone
 from packs.models import Liquidity, PackSell
 from packs.serializers import LiquiditySerializer
-from rest_framework import permissions
-from rest_framework import status
 from rest_framework import status as drf_status
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from wallet.models import Deposit, Withdrawal
 
 from .models import CustomUser
 from .serializers import TransactionSerializer, UserSerializer
-from .telegram_wbapp import parse_init_data, verify_webapp_init_data
 
 
-class TelegramWebAppLoginView(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, request: Request) -> Response:
-        bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
-        init_data = (request.data or {}).get("initData", "")
-        if not bot_token or not init_data:
-            return Response(
-                {"ok": False, "error": "bad request"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if not verify_webapp_init_data(init_data, bot_token):
-            return Response(
-                {"ok": False, "error": "verification failed"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        items = parse_init_data(init_data)
-        try:
-            user_json = json.loads(items.get("user", "{}"))
-            tg_id = int(user_json["id"])
-        except Exception:
-            return Response(
-                {"ok": False, "error": "invalid user data"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        user = CustomUser.objects.get(telegram_id=tg_id)
-        if user is None:
-            user = CustomUser.objects.create(
-                telegram_id=tg_id,
-                username=user_json.get("username") or "",
-                first_name=user_json.get("first_name") or "",
-                last_name=user_json.get("last_name") or "",
-                image_url=user_json.get("photo_url") or "",
-                date_joined=timezone.now(),
-            )
-        else:
-            user.username = user_json.get("username") or user.username
-            user.first_name = user_json.get("first_name") or user.first_name
-            user.last_name = user_json.get("last_name") or user.last_name
-            user.image_url = user_json.get("image_url") or user.image_url
-            user.date_joined = timezone.now()
-            user.save()
-
-        login(request, user)
-
-        return Response(
-            {
-                "ok": True,
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "telegram_id": user.telegram_id,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                    "image_url": user.image_url,
-                },
-            },
-            status=status.HTTP_200_OK,
-        )
-
-
-class MeView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request: Request) -> Response:
-        user = getattr(request.user, "telegram", None)
-        return Response(
-            {
-                "id": request.user.id,
-                "username": request.user.username,
-                "telegram": {
-                    "id": user.telegram_id if user else None,
-                    "username": user.username if user else None,
-                },
-            },
-            status=status.HTTP_200_OK,
-        )
-
-
-class LogoutView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request: Request) -> Response:
-        logout(request)
-        return Response({"ok": True}, status=status.HTTP_200_OK)
-
-
-# ---------------------------------------------------------------------------------
 class UserAPIViewSet(viewsets.GenericViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
 
-    @action(detail=False, methods=["GET"], url_path="(?P<telegram_id>[^/.]+)")
+    @action(detail=False, methods=["POST"], url_path="user")
+    def create_user(self, request: Request) -> Response:
+        telegram_id = request.data.get("telegram_id")
+
+        try:
+            user = CustomUser.objects.get(telegram_id=telegram_id)
+            if user:
+                return Response({"status": "error", "message": "Пользователь уже был создан"}, drf_status.HTTP_200_OK)
+        except Exception:
+            pass
+
+        first_name = request.data.get("first_name")
+        last_name = request.data.get("last_name")
+        username = request.data.get("username")
+        language = request.data.get("language")
+        is_bot = request.data.get("is_bot")
+        image_url = request.data.get("image_url")
+
+        try:
+            CustomUser.objects.create_user(telegram_id=telegram_id, username=username, first_name=first_name,
+                                           last_name=last_name, language=language, is_bot=is_bot,
+                                           password="plug", image_url=image_url)
+        except Exception as e:
+            print("Ошибка при создании пользователя", e)
+            return Response({"status": "error", "message": f"Ошибка при создании пользователя: {e}"},
+                            drf_status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({"status": "success", "message": "Новый пользователь создан"}, drf_status.HTTP_200_OK)
+
+    @action(detail=False, methods=["GET"], url_path="user/(?P<telegram_id>[^/.]+)")
     def get_user(self, request: Request, telegram_id: int | None) -> Response:
         try:
             user = CustomUser.objects.get(telegram_id=telegram_id)
@@ -135,7 +65,7 @@ class UserAPIViewSet(viewsets.GenericViewSet):
             status=drf_status.HTTP_200_OK,
         )
 
-    @action(detail=False, methods=["GET"], url_path="(?P<telegram_id>[^/.]+)/inventory")
+    @action(detail=False, methods=["GET"], url_path="user/(?P<telegram_id>[^/.]+)/inventory")
     def get_user_inventory(self, request: Request, telegram_id: int) -> Response:
         try:
             user = CustomUser.objects.get(telegram_id=telegram_id)
