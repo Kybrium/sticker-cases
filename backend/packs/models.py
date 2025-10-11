@@ -9,7 +9,10 @@ class Pack(models.Model):
     collection_name = models.CharField(max_length=255)
     contributor = models.CharField(max_length=255)
     floor_price = models.DecimalField(max_digits=20, decimal_places=3)
-    image_url = models.ImageField(upload_to="packs/", blank=True, null=True)
+    image_url = models.URLField(
+        max_length=500,
+        default="https://stickercasebucket.s3.eu-north-1.amazonaws.com/packs/plug.png"
+    )
 
     def __str__(self) -> str:
         return f"{self.pack_name} {self.collection_name}"
@@ -27,10 +30,10 @@ class Liquidity(models.Model):
     number = models.IntegerField(null=False, blank=False)
     nft_address = models.TextField()
     link = models.URLField(default="https://getgems.io/")
-    in_case = models.BooleanField(default=True)
+    free = models.BooleanField(default=True)
 
     def __str__(self) -> str:
-        return f"{self.pack} {self.number}"
+        return f"{self.id}. {self.pack} {self.number}"
 
 
 class PackSell(models.Model):

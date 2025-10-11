@@ -11,6 +11,7 @@ class CustomUser(AbstractUser):
         db_table = "User"
 
     last_name = models.CharField(max_length=150, blank=True, null=True)
+    first_name = models.CharField(max_length=150, blank=True, null=True)
     telegram_id = models.BigIntegerField(unique=True, blank=True, null=True)
     language = models.CharField(max_length=10, blank=True, null=True)
     is_bot = models.BooleanField(default=False)
