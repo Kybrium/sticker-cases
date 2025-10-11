@@ -10,4 +10,4 @@ class PackAdmin(admin.ModelAdmin):
 
 @admin.register(Liquidity)
 class LiquidityAdmin(admin.ModelAdmin):
-    list_display = ["pack", "number", "link", "in_case"]
+    list_display = ["pack", "number", "link", "free", "id"]

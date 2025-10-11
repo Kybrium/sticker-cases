@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "packs",
     "users",
     "wallet",
+    "upgrade",
 ]
 
 # MIDDLEWARE THE ORDER IS IMPORTANT!!!!!!!

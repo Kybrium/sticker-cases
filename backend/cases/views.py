@@ -14,6 +14,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
 from users.models import CustomUser, UserInventory
+from users.serializers import UserSerializer
 
 from .models import Case, CaseItem, CaseOpen, CaseStatus
 from .serializers import CaseSerializer
@@ -49,15 +50,23 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
     serializer_class = CaseSerializer
 
     def list(self, request: Request) -> Response:
+        case_name = request.GET.get("name")
+
+        if case_name:
+            serializer = CaseSerializer(data={"name": case_name})
+            serializer.is_valid(raise_exception=True)
+            case = serializer.save()
+            return Response(
+                {"status": "success", "case": serializer.to_representation(case)},
+                status=drf_status.HTTP_200_OK,
+            )
+
         active_cases = self.get_queryset().filter(status=CaseStatus.ACTIVE)
         pagination = request.GET.get("pagination")
 
         if not active_cases.exists():
             return Response(
-                {
-                    "status": "success",
-                    "message": "Нету доступных кейсов",
-                },
+                {"status": "success", "message": "Нету доступных кейсов"},
                 status=drf_status.HTTP_200_OK,
             )
 
@@ -67,7 +76,7 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
             paginator.max_limit = 10
             page = paginator.paginate_queryset(active_cases, request, view=self)
             if page is not None:
-                serializer = self.get_serializer(page, many=True)
+                serializer = CaseSerializer(page, many=True)
                 return Response(
                     {
                         "status": "success",
@@ -163,13 +172,9 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
     @method_decorator(cache_page(300))
     @action(detail=False, methods=["get"], url_path="case/(?P<case_name>[^/.]+)")
     def list_case_items(self, request: Request, case_name: str) -> Response:
-        try:
-            case = Case.objects.get(name=case_name)
-        except Case.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Кейс не найден"},
-                status=drf_status.HTTP_404_NOT_FOUND,
-            )
+        serializer = CaseSerializer(data={"name": case_name})
+        serializer.is_valid(raise_exception=True)
+        case = serializer.save()
 
         case_items = CaseItem.objects.filter(case=case)
         serializer = CaseItemSerializer(case_items, many=True)
@@ -186,19 +191,12 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
     def open_case_view(self, request: Request, case_name: str | None = None) -> Response:  # noqa: C901
         telegram_id = request.data.get("telegram_id")
 
-        if not telegram_id:
-            return Response(
-                {"status": "error", "message": "Telegram ID не предоставлен"},
-                status=drf_status.HTTP_400_BAD_REQUEST,
-            )
+        serializer = UserSerializer(data={"telegram_id": telegram_id})
+        serializer.is_valid(raise_exception=True)
 
-        try:
-            case = Case.objects.get(name=case_name)
-        except Case.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Кейс не найден"},
-                status=drf_status.HTTP_404_NOT_FOUND,
-            )
+        serializer = CaseSerializer(data={"name": case_name})
+        serializer.is_valid(raise_exception=True)
+        case = serializer.save()
 
         user = None
         if telegram_id:
@@ -246,7 +244,7 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
 
             try:
                 with transaction.atomic():
-                    drop: Liquidity | None = Liquidity.objects.filter(pack=pack, in_case=True).first()
+                    drop: Liquidity | None = Liquidity.objects.filter(pack=pack, free=True).first()
                     if not drop:
                         case.status = CaseStatus.OUT_OF_STICKERS
                         case.save()
@@ -254,7 +252,7 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
                             {"error": "Не найден дроп для кейса. Баланс не был списан."},
                             drf_status.HTTP_400_BAD_REQUEST,
                         )
-                    drop.in_case = False
+                    drop.free = False
                     drop.save()
 
                     user.balance = cast(float, user.balance) - cast(float, case.price)

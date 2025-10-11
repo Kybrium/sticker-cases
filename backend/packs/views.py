@@ -11,8 +11,9 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 from users.models import CustomUser, UserInventory
+from packs.serializers import RequestLiquiditySerializer
 
-from .models import Liquidity, Pack, PackSell
+from .models import Pack, PackSell
 
 
 class PackAPIViewSet(viewsets.GenericViewSet):
@@ -54,16 +55,12 @@ class PackAPIViewSet(viewsets.GenericViewSet):
         url_path="(?P<collection_name>[^/.]+)/(?P<pack_name>[^/.]+)",
     )
     def get_pack(self, request: Request, pack_name: str, collection_name: str) -> Response:
-        try:
-            pack = Pack.objects.get(pack_name=pack_name, collection_name=collection_name)
-        except Pack.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Пак не найден"},
-                status=drf_status.HTTP_404_NOT_FOUND,
-            )
-        serializer = PackSerializer(pack)
+        serializer = PackSerializer(data={"collection_name": collection_name, "pack_name": pack_name})
+        serializer.is_valid(raise_exception=True)
+        pack = serializer.save()
+
         return Response(
-            {"status": "success", "item": serializer.data},
+            {"status": "success", "item": serializer.to_representation(pack)},
             status=drf_status.HTTP_200_OK,
         )
 
@@ -109,53 +106,12 @@ class PackAPIViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=["POST"], url_path="sell")
     def sell_liquidity(self, request: Request) -> Response:  # noqa: C901
 
-        required_fields = [
-            "telegram_id",
-            "pack_name",
-            "collection_name",
-            "contributor",
-            "number",
-        ]
-        for field in required_fields:
-            if not request.data.get(field):
-                return Response(
-                    {"status": "error", "message": f"Поле '{field}' обязательно"},
-                    status=drf_status.HTTP_400_BAD_REQUEST,
-                )
+        serializer = RequestLiquiditySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        telegram_id = request.data.get("telegram_id")
-        pack_name = request.data.get("pack_name")
-        collection_name = request.data.get("collection_name")
-        contributor = request.data.get("contributor")
-        number: Any = request.data.get("number")
-
-        try:
-            pack = Pack.objects.get(
-                pack_name=pack_name,
-                collection_name=collection_name,
-                contributor=contributor,
-            )
-        except Pack.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Пак не найден"},
-                status=drf_status.HTTP_404_NOT_FOUND,
-            )
-
-        try:
-            liquidity = Liquidity.objects.get(pack=pack, number=number)
-        except Liquidity.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Ликвидность не найдена"},
-                status=drf_status.HTTP_404_NOT_FOUND,
-            )
-
-        try:
-            user = CustomUser.objects.get(telegram_id=telegram_id)
-        except CustomUser.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Пользователь не найден"},
-                status=drf_status.HTTP_404_NOT_FOUND,
-            )
+        liquidity = serializer.validated_data["liquidity"]
+        pack = serializer.validated_data["pack"]
+        user = serializer.validated_data["user"]
 
         if not UserInventory.objects.filter(user=user, liquidity=liquidity).exists():
             return Response(
@@ -168,7 +124,7 @@ class PackAPIViewSet(viewsets.GenericViewSet):
                 user.balance = cast(float, user.balance) + cast(float, pack.floor_price)
                 user.save()
                 UserInventory.objects.filter(user=user, liquidity=liquidity).delete()
-                liquidity.in_case = True
+                liquidity.free = True
                 liquidity.save()
                 PackSell.objects.create(liquidity=liquidity, user=user, date=timezone.now())
         except Exception as e:

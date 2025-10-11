@@ -1,10 +1,9 @@
 import os
 
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
-from router import get_manifest, router
+from router import router
 from wallet.views import tonconsole_webhook
 
 from .health import healthz
@@ -15,7 +14,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("healthz/", healthz),
     path("api/", include(router.urls)),
-    path("tonconnect-manifest.json", get_manifest),
     path(f"webhook/tonconsole/{webhook_uuid}", tonconsole_webhook),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     # Optional UI:

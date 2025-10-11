@@ -31,7 +31,10 @@ class Case(models.Model):
     current_fee = models.FloatField()
     base_fee = models.FloatField(default=20.0)
     status = models.CharField(max_length=50, choices=CaseStatus.choices(), default=CaseStatus.INACTIVE)
-    image_url = models.ImageField(upload_to="cases/", blank=True, null=True)
+    image_url = models.URLField(
+        max_length=500,
+        default="https://stickercasebucket.s3.eu-north-1.amazonaws.com/cases/plug.png"
+    )
 
     def __str__(self) -> str:
         return self.name
@@ -42,7 +45,7 @@ class CaseItem(models.Model):
         db_table = "CaseItem"
 
     case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name="case_item")
-    pack = models.ForeignKey("packs.Pack", on_delete=models.CASCADE, related_name="packs")
+    pack = models.ForeignKey("packs.Pack", on_delete=models.CASCADE, related_name="cases")
     chance = models.FloatField()
 
 
@@ -67,4 +70,10 @@ class CaseOpen(models.Model):
     def price(self) -> float | None:
         if self.drop and self.drop.pack:
             return float(self.drop.pack.floor_price)
+        return None
+
+    @property
+    def image_url(self) -> str | None:
+        if self.drop and self.drop.pack:
+            return self.drop.pack.image_url
         return None
