@@ -9,7 +9,7 @@ from .models import CustomUser
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ["telegram_id", "username", "balance", "image_url", "first_name", "last_name"]
+        fields = ["telegram_id", "username", "balance", "image_url", "first_name", "last_name", "language", "is_bot"]
 
 
 class TransactionSerializer(serializers.ModelSerializer):

@@ -117,9 +117,6 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-
 # ============================ Cors & Rest setups =================================
 SESSION_COOKIE_NAME = "sc_sessionid"
 SESSION_COOKIE_SAMESITE = "Lax"  # or "None" if we use a different site/port and HTTPS
@@ -183,8 +180,10 @@ if os.environ.get("RUN_MAIN") == "true":
 
     console = Console()
 
+
     def yes_no(val: bool) -> str:  # noqa: E303
         return f"[green]Yes[/green]" if val else "[red]No[/red]"  # noqa: F541
+
 
     def list_to_columns(items: list, title: str | None = None, color: str = "cyan") -> Panel:  # noqa: E303
         if not items:
@@ -201,6 +200,7 @@ if os.environ.get("RUN_MAIN") == "true":
             border_style="grey37",
             box=box.ROUNDED,
         )
+
 
     mode = "DEV" if DEBUG else "PROD"  # noqa: E303
     color = "green" if DEBUG else "red"

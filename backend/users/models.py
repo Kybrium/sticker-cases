@@ -10,13 +10,17 @@ class CustomUser(AbstractUser):
     class Meta:
         db_table = "User"
 
+    last_name = models.CharField(max_length=150, blank=True, null=True)
     telegram_id = models.BigIntegerField(unique=True, blank=True, null=True)
     language = models.CharField(max_length=10, blank=True, null=True)
     is_bot = models.BooleanField(default=False)
     balance = models.DecimalField(max_digits=20, decimal_places=3, default=0, blank=True, null=True)
     wallet = models.TextField(blank=True, null=True)
     wallet_connection_date = models.DateTimeField(blank=True, null=True)
-    image_url = models.ImageField(upload_to="users/", default="users/plug.png")
+    image_url = models.URLField(
+        max_length=500,
+        default="https://stickercasebucket.s3.eu-north-1.amazonaws.com/users/plug.png"
+    )
     groups = models.ManyToManyField(  # type: ignore[assignment]
         Group,
         blank=True,

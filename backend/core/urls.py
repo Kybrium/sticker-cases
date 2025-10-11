@@ -8,7 +8,6 @@ from router import get_manifest, router
 from wallet.views import tonconsole_webhook
 
 from .health import healthz
-from .settings import MEDIA_ROOT, MEDIA_URL
 
 webhook_uuid = os.getenv("TONCONSOLE_WEBHOOK_UUID")
 
@@ -22,4 +21,4 @@ urlpatterns = [
     # Optional UI:
     path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
-] + static(MEDIA_URL, document_root=MEDIA_ROOT)
+]
