@@ -32,6 +32,8 @@ from tonutils.client import TonapiClient
 from tonutils.wallet import WalletV5R1
 from tonutils.wallet.messages import TransferNFTMessage
 from users.models import CustomUser, UserInventory
+from users.serializers import UserSerializer
+from packs.serializers import RequestLiquiditySerializer
 
 from .models import Deposit, Withdrawal
 from .serializers import SignatureValidationSerializer, WalletSerializer
@@ -142,26 +144,16 @@ class WalletAPIViewSet(viewsets.GenericViewSet):
             return SignatureValidationSerializer
         return super().get_serializer_class()
 
-    @action(methods=["POST"], detail=False, url_path="get-nonce")
-    def get_nonce(self, request: Request) -> Response:
-        telegram_id = request.data.get("telegram_id")
-        if not telegram_id:
-            return Response(
-                {"status": "error", "message": "Telegram id is not provided"},
-                status=drf_status.HTTP_400_BAD_REQUEST,
-            )
-        try:
-            CustomUser.objects.get(telegram_id=telegram_id)
-        except CustomUser.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Пользователь не найден"},
-                status=drf_status.HTTP_404_NOT_FOUND,
-            )
+    @action(methods=["POST"], detail=False, url_path="(?P<telegram_id>[^/.]+)/get-nonce")
+    def get_nonce(self, request: Request, telegram_id: int | None = None) -> Response:
+        serializer = UserSerializer(data={"telegram_id": telegram_id})
+        serializer.is_valid(raise_exception=True)
+
         cache = CacheService()
 
         if cache.get(f"active_nonces:{telegram_id}"):
             return Response(
-                {"status": "error", "message": "Nonce is already created"},
+                {"status": "error", "message": "Nonce уже создан"},
                 status=drf_status.HTTP_400_BAD_REQUEST,
             )
 
@@ -242,21 +234,10 @@ class WalletAPIViewSet(viewsets.GenericViewSet):
             status=drf_status.HTTP_200_OK,
         )
 
-    @action(methods=["POST"], detail=False, url_path="create-invoice")
-    def create_invoice(self, request: Request) -> Response:
-        telegram_id = request.data.get("telegram_id")
-        if not telegram_id:
-            return Response(
-                {"status": "error", "message": "Telegram ID не предоставлен"},
-                status=drf_status.HTTP_400_BAD_REQUEST,
-            )
-        try:
-            CustomUser.objects.get(telegram_id=telegram_id)
-        except CustomUser.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Пользователь не найден"},
-                status=drf_status.HTTP_404_NOT_FOUND,
-            )
+    @action(methods=["POST"], detail=False, url_path="(?P<telegram_id>[^/.]+)/create-invoice")
+    def create_invoice(self, request: Request, telegram_id: int | None = None) -> Response:
+        serializer = UserSerializer(data={"telegram_id": telegram_id})
+        serializer.is_valid(raise_exception=True)
 
         cache = CacheService()
         active_invoice = cache.get(f"active_invoices:{telegram_id}")
@@ -337,14 +318,11 @@ class WalletAPIViewSet(viewsets.GenericViewSet):
             status=drf_status.HTTP_200_OK,
         )
 
-    @action(detail=False, methods=["POST"], url_path="check-deposit")
-    def check_deposit(self, request: Request) -> Response:
-        telegram_id = str(request.data.get("telegram_id"))
-        if not telegram_id:
-            return Response(
-                {"status": "error", "message": "Telegram ID не предоставлен"},
-                status=drf_status.HTTP_400_BAD_REQUEST,
-            )
+    @action(detail=False, methods=["POST"], url_path="(?P<telegram_id>[^/.]+)/check-deposit")
+    def check_deposit(self, request: Request, telegram_id: int | None = None) -> Response:
+        serializer = UserSerializer(data={"telegram_id": telegram_id})
+        serializer.is_valid(raise_exception=True)
+
         cache = CacheService()
         active_invoice_key = f"active_invoices:{str(telegram_id)}"
         try:
@@ -420,52 +398,12 @@ class WalletAPIViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=["POST"], url_path="withdrawal")
     def withdrawal_nft(self, request: Request) -> Response:  # noqa: C901
-        required_fields = [
-            "telegram_id",
-            "pack_name",
-            "collection_name",
-            "contributor",
-            "number",
-        ]
-        for field in required_fields:
-            if not request.data.get(field):
-                return Response(
-                    {"status": "error", "message": f"Поле '{field}' обязательно"},
-                    status=drf_status.HTTP_400_BAD_REQUEST,
-                )
-        telegram_id = request.data.get("telegram_id")
-        pack_name = request.data.get("pack_name")
-        collection_name = request.data.get("collection_name")
-        contributor = request.data.get("contributor")
-        number: Any = request.data.get("number")
+        serializer = RequestLiquiditySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        try:
-            pack = Pack.objects.get(
-                pack_name=pack_name,
-                collection_name=collection_name,
-                contributor=contributor,
-            )
-        except Pack.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Пак не найден"},
-                status=drf_status.HTTP_404_NOT_FOUND,
-            )
-
-        try:
-            liquidity = Liquidity.objects.get(pack=pack, number=number)
-        except Liquidity.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Ликвидность не найдена"},
-                status=drf_status.HTTP_404_NOT_FOUND,
-            )
-
-        try:
-            user = CustomUser.objects.get(telegram_id=telegram_id)
-        except CustomUser.DoesNotExist:
-            return Response(
-                {"status": "error", "message": "Пользователь не найден"},
-                status=drf_status.HTTP_404_NOT_FOUND,
-            )
+        liquidity = serializer.validated_data["liquidity"]
+        user = serializer.validated_data["user"]
+        pack = serializer.validated_data["pack"]
 
         if not UserInventory.objects.filter(user=user, liquidity=liquidity).exists():
             return Response(

@@ -3,10 +3,29 @@ from rest_framework import serializers
 from .models import Case, CaseItem
 
 
-class CaseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Case
-        fields = ["name", "price", "image_url", "base_fee", "status"]
+class CaseSerializer(serializers.Serializer):
+    name = serializers.CharField()
+
+    def validate_name(self, value):
+        try:
+            case = Case.objects.get(name=value)
+        except Case.DoesNotExist:
+            raise serializers.ValidationError("Кейс не найден")
+        self.case = case
+        return value
+
+    def create(self, validated_data):
+        return self.case
+
+    def to_representation(self, instance):
+        return {
+            "name": instance.name,
+            "price": instance.price,
+            "image_url": instance.image_url,
+            "base_fee": instance.base_fee,
+            "status": instance.status,
+            "current_fee": instance.current_fee
+        }
 
 
 class CaseItemSerializer(serializers.ModelSerializer):
