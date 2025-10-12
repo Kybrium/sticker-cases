@@ -21,6 +21,17 @@ class PackAPIViewSet(viewsets.GenericViewSet):
     serializer_class = PackSerializer
 
     def list(self, request: Request) -> Response:
+        pack_id = request.GET.get("id")
+
+        if pack_id:
+            serializer = PackSerializer(data={"id": pack_id})
+            serializer.is_valid(raise_exception=True)
+            pack = serializer.save()
+            return Response(
+                {"status": "success", "pack": serializer.to_representation(pack)},
+                status=drf_status.HTTP_200_OK,
+            )
+
         all_packs = self.get_queryset()
 
         if not all_packs.exists():
@@ -33,9 +44,8 @@ class PackAPIViewSet(viewsets.GenericViewSet):
         )
 
     @method_decorator(cache_page(70))
-    @action(detail=False, methods=["get"], url_path="contributor")
-    def list_by_contributor(self, request: Request) -> Response:
-        contributor = request.GET.get("contributor")
+    @action(detail=False, methods=["get"], url_path="contributor/(?P<contributor>[^/.]+)")
+    def list_by_contributor(self, request: Request, contributor: str | None = None) -> Response:
         if not contributor:
             return Response(
                 {"status": "error", "message": "URL param 'contributor' is required"},
@@ -52,7 +62,7 @@ class PackAPIViewSet(viewsets.GenericViewSet):
     @action(
         detail=False,
         methods=["get"],
-        url_path="(?P<collection_name>[^/.]+)/(?P<pack_name>[^/.]+)",
+        url_path="pack/(?P<collection_name>[^/.]+)/(?P<pack_name>[^/.]+)",
     )
     def get_pack(self, request: Request, pack_name: str, collection_name: str) -> Response:
         serializer = PackSerializer(data={"collection_name": collection_name, "pack_name": pack_name})
