@@ -6,26 +6,19 @@
 ***Response:***
 
 ````
-[
-  {
-    "name": "DOGS OG Case",
-    "price": "3.500",
-    "image_url": null,
-    "base_fee": 20.0
-  },
-  {
-    "name": "DOGS Rewards Case",
-    "price": "2844.500",
-    "image_url": null,
-    "base_fee": 20.0
-  },
-  {
-    "name": "Blum Case",
-    "price": "1.500",
-    "image_url": null,
-    "base_fee": 20.0
-  }
-]
+{
+  "status": "success",
+  "items": [
+    {
+      "name": "Sigma Case",
+      "price": 90.5,
+      "image_url": "https://stickercasebucket.s3.eu-north-1.amazonaws.com/cases/plug.png",
+      "base_fee": 20.0,
+      "status": "active",
+      "current_fee": 19.58228694282642
+    }
+  ]
+}
 ````
 
 Возвращает кейсы со статусом ACTIVE: \
@@ -35,59 +28,63 @@
 - `image_url` фоточка для фронтенда
 - `base_fee` фи кейса на которую равняется `current_fee`, можно и ее в сериализаторе указать
 
-Пагинация возвращает по 2 объекта на раз. \
-
 Если добавить параметр ?pagination=true, то вернет с пагинацией:
 
 ````
-{ 
-  "count": 3, 
-  "next": "http://127.0.0.1:8000/api/cases/?limit=2&offset=2", 
-  "previous": null, 
-  "results": [ 
-    { 
-      "name": "DOGS OG Case", 
-      "price": "3.500", 
-      "image_url": null, 
-      "base_fee": 20.0 
-    }, 
-    { 
-      "name": "DOGS Rewards Case", 
-      "price": "2844.500", 
-      "image_url": null, 
-      "base_fee": 20.0 
-    } 
-  ] 
-} 
+{
+  "status": "success",
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "items": [
+    {
+      "name": "Sigma Case",
+      "price": 90.5,
+      "image_url": "https://stickercasebucket.s3.eu-north-1.amazonaws.com/cases/plug.png",
+      "base_fee": 20.0,
+      "status": "active",
+      "current_fee": 19.58228694282642
+    }
+  ]
+}
 ````
 
-2. **GET /api/cases/case/Blum Case/** \
+Если добавить параметр `name=Test Case`, то вернет один кейс
+
+2. **GET /api/cases/Blum Case/items/** \
    ***Response:***
 
 ````
-[
-  {
-    "pack_name": "Cook",
-    "pack_image": "",
-    "chance": 0.4,
-    "case_name": "Blum Case",
-    "pack_floor_price": "0.850"
-  },
-  {
-    "pack_name": "Curly",
-    "pack_image": "",
-    "chance": 0.287767499166936,
-    "case_name": "Blum Case",
-    "pack_floor_price": "0.820"
-  },
-  {
-    "pack_name": "Cap",
-    "pack_image": "",
-    "chance": 0.3075561556651276,
-    "case_name": "Blum Case",
-    "pack_floor_price": "2.588"
-  }
-]
+{
+  "status": "success",
+  "case": "Sigma Case",
+  "items": [
+    {
+      "pack_name": "Gold bone",
+      "collection_name": "DOGS Rewards",
+      "pack_image": "",
+      "chance": 0.0025,
+      "case_name": "Sigma Case",
+      "pack_floor_price": "18900.000"
+    },
+    {
+      "pack_name": "Not Cap",
+      "collection_name": "DOGS OG",
+      "pack_image": "",
+      "chance": 0.051798642533936665,
+      "case_name": "Sigma Case",
+      "pack_floor_price": "430.520"
+    },
+    {
+      "pack_name": "Extra Eyes",
+      "collection_name": "DOGS OG",
+      "pack_image": "",
+      "chance": 0.9457013574660634,
+      "case_name": "Sigma Case",
+      "pack_floor_price": "3.413"
+    }
+  ]
+}
 ````
 
 Возвращает стикерпаки которые связаны с кейсом (например Blum Case) через CaseItem: \
@@ -98,7 +95,7 @@
 - `case_name` имя кейса
 - `pack_floor_price` цена пака глобально
 
-3. **POST, GET /api/cases/case/Blum Case/open**
+3. **POST, GET /api/cases/Blum Case/open**
 
 ***Request:***
 
@@ -110,21 +107,26 @@
 
 ````
 {
+  "status": "success",
   "drop": {
-    "pack_name": "Cook",
-    "collection_name": "Blum",
+    "pack_name": "Extra Eyes",
+    "collection_name": "DOGS OG",
     "contributor": "Sticker Pack",
-    "floor_price": "0.850",
-    "status": "in_stock",
-    "in_stock_count": 0,
-    "image_url": null
- },
-  "drop_number": "213" 
+    "floor_price": 3.413,
+    "image_url": "",
+    "cases": [
+      {
+        "chance": 0.9457013574660634,
+        "case_name": "Sigma Case",
+      }
+    ]
+  },
+  "drop_number": 654
 }
 ````
 
-Открытие кейсов. POST: Если указать `"telegram_id"` то деньги спишутся с баланса юзера и он в инвентарь получит дроп.
-GET: Если не указывать, никакой логике на сервере указано не будет.
+Открытие кейсов. POST: Если отправить `"telegram_id"` то деньги спишутся с баланса юзера и он в инвентарь получит дроп.
+GET: Если не отправлять `"telegram_id"` будет демо открытие.
 
 - `pack_name` имя пака
 - `collection_name` название коллекции
@@ -134,8 +136,11 @@ GET: Если не указывать, никакой логике на серв
 - `image_url` фотка пака
 - `drop_number` число пака, нужно для определения в закупленной ликвидности
 
-4. **PATCH /api/cases/update-chances/** \
-   ***Request:***
+4. **PATCH /api/cases/update-chances/**
+
+**Эндпоинт не используется для фронтенда!**
+
+***Request:***
 
 ````
 {
@@ -162,10 +167,12 @@ GET: Если не указывать, никакой логике на серв
 - `chance` новый шанс на выпадение
 - `collection_name` коллекция стикерпака
 
-Эндпоинт используется только в логике с price_update
 
 5. **PATCH /api/cases/update-cases/** \
-   ***Request:***
+
+**Эндпоинт не используется для фронтенда!**
+
+***Request:***
 
 ````
 {
@@ -191,9 +198,7 @@ GET: Если не указывать, никакой логике на серв
 }
 ````
 
-Обновляет текущий фи и цену кейсов. \
-
-Используется только внутри логики price_update
+Обновляет текущий фи и цену кейсов.
 ****
 
 ### packs
@@ -202,34 +207,45 @@ GET: Если не указывать, никакой логике на серв
    ***Response:***
 
 ````
-[
-  {
-    "pack_name": "Silver bone",
-    "collection_name": "DOGS Rewards",
-    "contributor": "Sticker Pack",
-    "floor_price": "51.228",
-    "status": "out_of_stock",
-    "in_stock_count": 0,
-    "image_url": null
-  },
-  {
-    "pack_name": "Full dig",
-    "collection_name": "DOGS Rewards",
-    "contributor": "Sticker Pack",
-    "floor_price": "1.080",
-    "status": "out_of_stock",
-    "in_stock_count": 0,
-    "image_url": null
-  },
-  {
-    "pack_name": "Cook",
-    "collection_name": "DOGS OG",
-    "contributor": "Sticker Pack",
-    "floor_price": "5.738",
-    "status": "in_stock",
-    "in_stock_count": 1,
-    "image_url": null
-  }]
+{
+  "status": "success",
+  "items": [
+    {
+      "pack_name": "Gold bone",
+      "collection_name": "DOGS Rewards",
+      "contributor": "Sticker Pack",
+      "floor_price": 18900.0,
+      "image_url": "",
+      "cases": [
+        {
+          "chance": 0.0025,
+          "case_name": "Sigma Case",
+        }
+      ]
+    },
+    {
+      "pack_name": "Not Cap",
+      "collection_name": "DOGS OG",
+      "contributor": "Sticker Pack",
+      "floor_price": 430.52,
+      "image_url": "",
+      "cases": [
+        {
+          "chance": 0.051798642533936665,
+          "case_name": "Sigma Case",
+        }
+      ]
+    },
+    {
+      "pack_name": "Pixioznik",
+      "collection_name": "Not Pixel",
+      "contributor": "Sticker Pack",
+      "floor_price": 1.702,
+      "image_url": "",
+      "cases": []
+    }
+  ]
+}
 ```` 
 
 Возвращает стикерпаки: \
@@ -242,62 +258,69 @@ GET: Если не указывать, никакой логике на серв
 - `in_stock_count` сколько закуплено для ликвидности кейсов
 - 'image_url' фотка
 
-2. **GET /api/packs/contributor/?contributor=Sticker Pack** \
-   ***Response:***
+Если указать параметр `id=2`, вернет пак по его айди:
 
 ````
-[
-  {
-    "pack_name": "Silver bone",
-    "collection_name": "DOGS Rewards",
+{
+  "status": "success",
+  "pack": {
+    "id": 3,
+    "pack_name": "Pixioznik",
+    "collection_name": "Not Pixel",
     "contributor": "Sticker Pack",
-    "floor_price": "51.228",
-    "status": "out_of_stock",
-    "in_stock_count": 0,
-    "image_url": null
-  },
-  {
-    "pack_name": "Full dig",
-    "collection_name": "DOGS Rewards",
-    "contributor": "Sticker Pack",
-    "floor_price": "1.080",
-    "status": "out_of_stock",
-    "in_stock_count": 0,
-    "image_url": null
-  },
-  {
-    "pack_name": "Cook",
-    "collection_name": "DOGS OG",
-    "contributor": "Sticker Pack",
-    "floor_price": "5.738",
-    "status": "in_stock",
-    "in_stock_count": 1,
-    "image_url": null
-  }]
+    "floor_price": 1.702,
+    "image_url": "",
+    "cases": []
+  }
+}
+````
+
+2. **GET /api/packs/contributor/Sticker Pack/** \
+
+***Response:***
+
+````
+{
+  "status": "success",
+  "items": [
+    {
+      "pack_name": "Gold bone",
+      "collection_name": "DOGS Rewards",
+      "contributor": "Sticker Pack",
+      "floor_price": 18900.0,
+      "image_url": "",
+      "cases": [
+        {
+          "chance": 0.0025,
+          "case_name": "Sigma Case"
+        }
+      ]
+    },
+    {
+      "pack_name": "Not Cap",
+      "collection_name": "DOGS OG",
+      "contributor": "Sticker Pack",
+      "floor_price": 430.52,
+      "image_url": "",
+      "cases": [
+        {
+          "chance": 0.051798642533936665,
+          "case_name": "Sigma Case"
+        }
+      ]
+    }
+  ]
+}
 ````
 
 Фильтрует все паки по контрибьютору, например Sticker Pack \
 Подключен кэш
 
-3. **GET /api/packs/DOGS OG/Pilot/** \
-   ***Response***
+3. **PATCH /api/packs/update-stickers-price/**
 
-````
-{
-  "pack_name": "Pilot",
-  "collection_name": "DOGS OG",
-  "contributor": "Sticker Pack",
-  "floor_price": "5.589",
-  "status": "in_stock",
-  "in_stock_count": 0,
-  "image_url": null
-}
-````
+**Эндпоинт не используется для фронтенда!**
 
-Возвращает стикерпак по его названию и коллекции
-
-4. **PATCH /api/packs/update-stickers-price/**
-   ***Request:***
+***Request:***
 
 ````
 {"packs_data": {"DOGS OG": {"Cook": 5.969}}}
@@ -317,74 +340,110 @@ GET: Если не указывать, никакой логике на серв
 
 ### users
 
-1. GET /api/users/user/{telegram_id}
+1. GET /api/users/{telegram_id}/
 
 ***Response:***
 
 ````
 {
-    "message": "Пользователь найден",
-    "user": {
-        "telegram_id": 123456789,
-        "username": "vvalera808",
-        "balance": "108.532",
-        "image_url": "/media/users/plug.png"
-    
-    }
+  "status": "success",
+  "user": {
+    "telegram_id": 1380639458,
+    "username": "vvalera808",
+    "balance": 2312221.5,
+    "image_url": "https://stickercasebucket.s3.eu-north-1.amazonaws.com/users/users/1380639458.jpg",
+    "first_name": "Валера",
+    "last_name": null,
+    "language": "en",
+    "is_bot": false
+  }
 }
-
 ````
 
 Получить информацию о пользователе
 
-2. GET /api/users/user/{telegram_id}/inventory/
+2. GET /api/users/{telegram_id}/inventory/
 
 ***Response:***
 
 ````
 {
-    "message": "Возвращено 2 объектов",
-    "inventory": [
-        {
-            "pack": 1,
-            "number": 562
-        },
-        {
-            "pack": 3,
-            "number": 819
-        }
-    ]
+  "status": "success",
+  "inventory_count": 1,
+  "inventory": [
+    {
+      "pack": {
+        "id": 4,
+        "pack_name": "Extra Eyes",
+        "collection_name": "DOGS OG",
+        "contributor": "Sticker Pack",
+        "floor_price": 3.413,
+        "image_url": "",
+        "cases": [
+          {
+            "chance": 0.9457013574660634,
+            "case_name": "Sigma Case"
+          }
+        ]
+      },
+      "number": 111,
+      "id": 15
+    }
+  ]
 }
 ````
 
 Получить инвентарь пользователя
 
-3. GET /api/users/user/{telegram_id}/transactions/
+3. GET /api/users/{telegram_id}/transactions/
 
 ***Response:***
 
 ````
 {
+  "status": "success",
+  "transaction_count": 28,
   "transactions": [
     {
-      "type": "Sticker sell",
+      "type": "Case open",
       "data": {
-        "price": 13.904,
-        "date": "2025-10-01T09:33:27.112899Z"
+        "price": 3.413,
+        "date": "2025-10-12T10:41:16.473864Z",
+        "drop_image_url": ""
       }
     },
     {
       "type": "Case open",
       "data": {
-        "price": 13.904,
-        "date": "2025-10-01T09:29:40.254197Z"
+        "price": 3.413,
+        "date": "2025-10-12T10:32:15.585404Z",
+        "drop_image_url": ""
       }
     },
     {
-      "type": "Deposit",
+      "type": "Sticker sell",
       "data": {
-        "sum": 0.1,
-        "date": "2025-10-01T09:22:09.608268Z"
+        "price": 13.3,
+        "date": "2025-10-11T14:26:03.343895Z",
+        "sticker_image_url": ""
+      }
+    },
+    {
+      "type": "Case open",
+      "data": {
+        "price": 18900.0,
+        "date": "2025-10-11T13:29:35Z",
+        "drop_image_url": ""
+      }
+    },
+    {
+      "type": "Upgrade",
+      "data": {
+        "success": false,
+        "date": "2025-10-11T13:24:51.148736Z",
+        "bet_image_url": "",
+        "drop_image_url": "",
+        "price": -121.56
       }
     }
   ]
@@ -392,7 +451,7 @@ GET: Если не указывать, никакой логике на серв
 ````
 
 Возвращает все транзакции совершенные пользователем отсортированно по времени (депозит, вывод, открытие кейса, продажа
-стикера.)
+стикера, апгрейд)
 
 4. POST /api/users/user/
 
@@ -416,7 +475,7 @@ GET: Если не указывать, никакой логике на серв
 
 ### wallet
 
-1. POST /api/wallet/get-nonce/
+1. POST /api/wallet/{telegram_id}/get-nonce/
    ***Request:***
 
 ````
@@ -467,15 +526,7 @@ wallet=v-syrom-formate-kosh&telegram_id=213123123&timestamp=1600002213&nonce=e4w
 Сверяет подпись и сообщение. Одноразовое использование. Работает только с nonce который сгенерировал сервер. В message
 передается кош, телеграм айди, когда был подключен кош и nonce. Кош и подключение записывается в бд при 200 статусе.
 
-3. POST /api/wallet/create-invoice
-
-***Request***
-
-````
-
-{"telegram_id": "321321"}
-
-````
+3. POST /api/wallet/{telegram_id}/create-invoice/
 
 ***Response***
 
@@ -494,15 +545,7 @@ wallet=v-syrom-formate-kosh&telegram_id=213123123&timestamp=1600002213&nonce=e4w
 Создание инвойса для оплаты пользователем. На одного пользователя может быть максимум один инвойс. Вызывается при
 нажатии кнопки "пополнить". Инвойс живет сутки. Не фиксированная сумма депа
 
-4. POST /api/wallet/check-deposit
-
-***Request:***
-
-````
-
-{"telegram_id": "321321"}
-
-````
+4. POST /api/wallet/{telegram_id}/check-deposit
 
 ***Response:***
 
@@ -524,21 +567,7 @@ wallet=v-syrom-formate-kosh&telegram_id=213123123&timestamp=1600002213&nonce=e4w
 
 ### Вебхуки и дополнительное
 
-1. GET /tonconnect-manifest.json/
-   ***Response:***
-
-````
-
-{
-"url": "http://localhost:8080",
-"name": "TON Connect Demo"
-}
-
-````
-
-Необходим для корректной работы ton connect на клиенте
-
-2. POST webhook/tonconsole/uuid
+1. POST webhook/tonconsole/{uuid}/
 
 ***Request:***
 

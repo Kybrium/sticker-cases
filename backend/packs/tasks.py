@@ -89,7 +89,7 @@ async def adjust_case_price(items_dict: dict, base_fee: float, percent: int = 5)
 
 
 def _rebalance_probs_greedy(  # noqa: C901
-    prices: list[float], probs: list[float], target_ev: float, min_p: float, max_p: float, eps: float = 1e-9
+        prices: list[float], probs: list[float], target_ev: float, min_p: float, max_p: float, eps: float = 1e-9
 ) -> tuple[list[float], float]:
     n = len(prices)
     p = probs[:]
@@ -154,12 +154,12 @@ def _rebalance_probs_greedy(  # noqa: C901
 
 
 async def rebalance_chances(  # noqa: C901
-    items: dict[str, dict[str, Any]],
-    case_price: float,
-    base_fee: float,
-    case_name: str,
-    percent: int = 5,
-    max_iter: int = 100,
+        items: dict[str, dict[str, Any]],
+        case_price: float,
+        base_fee: float,
+        case_name: str,
+        percent: int = 5,
+        max_iter: int = 100,
 ) -> tuple[dict[str, list[dict[str, Any]]], dict[str, dict[str, float]]]:  # noqa: C901
     """
     Распределение шансов с категориями и контролем EV/фи.
@@ -214,14 +214,14 @@ async def rebalance_chances(  # noqa: C901
         return [x / total for x in p]
 
     def greedy_adjust(
-        prices: list[float],
-        chances: list[float],
-        categories: list[str | None],
-        CATEGORY: dict[str, dict[str, float]],
-        target_ev: float,
-        eps: float = 1e-9,
-        max_iter: int = 100,
-        max_delta: float = 0.05,
+            prices: list[float],
+            chances: list[float],
+            categories: list[str | None],
+            CATEGORY: dict[str, dict[str, float]],
+            target_ev: float,
+            eps: float = 1e-9,
+            max_iter: int = 100,
+            max_delta: float = 0.05,
     ) -> tuple[list[float], float]:
         p = chances[:]
         n = len(p)
@@ -331,7 +331,7 @@ async def calculate_cases_price() -> None:
             case_name = case.get("name")
             case_base_fee = float(case.get("base_fee"))
 
-            response = await client.get(f"{BASE_URL}/api/cases/case/{case_name}/")
+            response = await client.get(f"{BASE_URL}/api/cases/{case_name}/items/")
             case_response = await response.json()
             items = case_response.get("items", [])
 

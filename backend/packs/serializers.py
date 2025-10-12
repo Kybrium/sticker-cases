@@ -6,36 +6,34 @@ from .models import Liquidity, Pack
 
 
 class PackSerializer(serializers.Serializer):
-    collection_name = serializers.CharField()
-    pack_name = serializers.CharField()
+    id = serializers.IntegerField()
 
-    def validate(self, attrs):
-        collection_name = attrs.get("collection_name")
-        pack_name = attrs.get("pack_name")
-
+    def validate_id(self, value):
         try:
-            pack = Pack.objects.get(
-                collection_name=collection_name,
-                pack_name=pack_name,
-            )
+            pack = Pack.objects.get(id=value)
         except Pack.DoesNotExist:
             raise serializers.ValidationError("Пак не найден")
 
-        attrs["pack"] = pack
-        return attrs
+        self.pack = pack
+        return value
 
     def create(self, validated_data):
-        return validated_data["pack"]
+        return getattr(self, "pack", None)
 
     def to_representation(self, instance):
         """instance — это уже объект Pack"""
         return {
+            "id": instance.id,
             "pack_name": instance.pack_name,
             "collection_name": instance.collection_name,
             "contributor": instance.contributor,
             "floor_price": instance.floor_price,
             "image_url": instance.image_url,
-            "cases": CaseItemSerializer(instance.cases.all(), many=True).data,
+            "cases": CaseItemSerializer(
+                instance.cases.all(),
+                many=True,
+                fields=["chance", "case_name"]
+            ).data,
         }
 
 

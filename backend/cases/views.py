@@ -170,7 +170,7 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
         )
 
     @method_decorator(cache_page(300))
-    @action(detail=False, methods=["get"], url_path="case/(?P<case_name>[^/.]+)")
+    @action(detail=False, methods=["get"], url_path="(?P<case_name>[^/.]+)/items")
     def list_case_items(self, request: Request, case_name: str) -> Response:
         serializer = CaseSerializer(data={"name": case_name})
         serializer.is_valid(raise_exception=True)
@@ -186,7 +186,7 @@ class CaseAPIViewSet(viewsets.GenericViewSet):
     @action(
         detail=False,
         methods=["POST", "GET"],
-        url_path="case/(?P<case_name>[^/.]+)/open",
+        url_path="(?P<case_name>[^/.]+)/open",
     )
     def open_case_view(self, request: Request, case_name: str | None = None) -> Response:  # noqa: C901
         telegram_id = request.data.get("telegram_id")

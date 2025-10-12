@@ -46,3 +46,13 @@ class CaseItemSerializer(serializers.ModelSerializer):
             "case_name",
             "pack_floor_price",
         ]
+
+    def __init__(self, *args, **kwargs):
+        # Позволяет передавать кастомный список полей при инициализации
+        fields = kwargs.pop("fields", None)
+        super().__init__(*args, **kwargs)
+
+        if fields is not None:
+            allowed = set(fields)
+            for field_name in set(self.fields) - allowed:
+                self.fields.pop(field_name)
