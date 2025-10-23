@@ -1,0 +1,14 @@
+@theme {
+  /* BRAND FONTS */
+
+  /* BRAND COLORS */
+  --color-background: #0F0F0F;
+  --color-second-background: #1E1E1F;
+  --color-third-background: #303031;
+  --color-additional-bg: #16293B;
+  --color-ton: #0096E4;
+  --color-primary-text: #FFFFFF;
+  --color-secondary-text: #898989;
+  --color-btn-stickers: #414142;
+  --color-btn-stickers-details: #5A5A5A;
+};

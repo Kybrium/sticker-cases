@@ -1,1 +1,3 @@
 @import "tailwindcss";
+@import "./../styles/branding.css";
+@import "./../styles/layouts.css";
