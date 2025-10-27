@@ -3,6 +3,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from cryptography.fernet import Fernet
+
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -30,17 +32,20 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "daphne",
     "django.contrib.staticfiles",
     # Third party
     "rest_framework",
     "corsheaders",
     "drf_spectacular",
+    "channels",
     # Apps
     "cases",
     "packs",
     "users",
     "wallet",
     "upgrade",
+    "rolls"
 ]
 
 # MIDDLEWARE THE ORDER IS IMPORTANT!!!!!!!
@@ -74,6 +79,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "core.wsgi.application"
+ASGI_APPLICATION = "core.asgi.application"
 
 # DB SETUP
 DATABASES = {
@@ -117,6 +123,8 @@ USE_TZ = True
 # STATIC SETUP
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+SECRET_ENCRYPTION_KEY = Fernet.generate_key()
 
 # ============================ Cors & Rest setups =================================
 SESSION_COOKIE_NAME = "sc_sessionid"

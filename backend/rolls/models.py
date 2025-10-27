@@ -1,6 +1,7 @@
 from django.utils import timezone
 from users.models import CustomUser
 from packs.models import Liquidity
+from users.models import CustomUser
 
 from django.db import models
 
@@ -31,10 +32,14 @@ class Round(models.Model):
     roulette = models.ForeignKey(Roulette, on_delete=models.CASCADE)
     started_at = models.DateTimeField(default=timezone.now)
     executed_at = models.DateTimeField(null=True, blank=True)
-    is_finished = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
-    def __str__(self):
-        return f"Round #{self.id} of Roulette #{self.roulette.id}"
+    secret_hash = models.CharField(max_length=64, null=True, blank=True)
+    secret = models.CharField(max_length=64, null=True, blank=True)
+
+
+def __str__(self):
+    return f"Round #{self.id} of Roulette #{self.roulette.id}"
 
 
 class BaseBet(models.Model):
@@ -80,3 +85,12 @@ class RoundResult(models.Model):
 
     def __str__(self):
         return f"Result for Round #{self.round.id}, Winner: {self.winner}"
+
+
+class TicketUsage(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    round = models.ForeignKey(Round, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'round')  # билет можно потратить только один раз за раунд
