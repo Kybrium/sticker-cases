@@ -3,7 +3,7 @@
 import SearchBar from "@/components/storage/SearchBar";
 import Stickers from "@/components/storage/Stickers";
 import StorageHeader from "@/components/storage/StorageHeader";
-import React from "react";
+import React, { useState } from "react";
 
 const Storage: React.FC = () => {
 
@@ -25,6 +25,8 @@ const Storage: React.FC = () => {
         });
     }
 
+    const [isActionsMenuOpen, setIsActionsMenuOpen] = useState<boolean>(false);
+
     return (
         <div className="min-h-screen bg-background px-4 py-2">
             <StorageHeader />
@@ -36,7 +38,6 @@ const Storage: React.FC = () => {
                 </div>
                 <SearchBar />
                 <Stickers data={data} />
-
             </main>
 
         </div>
