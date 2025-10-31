@@ -14,18 +14,6 @@ const BottomActions: React.FC<BottomActionsProps> = ({ open, onClose, children }
     const startY = useRef<number | null>(null);
     const [translateY, setTranslateY] = useState(0);
 
-    // close on scroll
-    useEffect(() => {
-        if (!open) return;
-        const handleScroll = () => {
-            onClose();
-        };
-        window.addEventListener("scroll", handleScroll, { passive: true });
-        return () => {
-            window.removeEventListener("scroll", handleScroll);
-        };
-    }, [open, onClose]);
-
     // close on click outside
     const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
         // if user clicked directly on overlay (not on content)

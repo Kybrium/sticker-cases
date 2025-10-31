@@ -3,14 +3,14 @@
 import React from "react";
 import { BsThreeDotsVertical } from "react-icons/bs";
 
-const Stickers: React.FC<{ data: any }> = ({ data }) => {
+const Stickers: React.FC<{ data: any, handleOpenMenu: (v: number) => void }> = ({ data, handleOpenMenu }) => {
     return (
         <div className="w-full grid grid-cols-3 space-y-2 gap-2 mt-6">
             {data.map((pack: any) =>
                 <div key={pack.id} className="flex flex-col items-center">
                     <div className="bg-second-background rounded-2xl relative">
                         <p className="absolute left-1 top-1 px-1 text-white text-xs bg-additional-bg/50 rounded-2xl">Sticker Pack</p>
-                        <BsThreeDotsVertical className="absolute right-1 bottom-1 px-1 text-white text-2xl bg-additional-bg/50 rounded-2xl" />
+                        <BsThreeDotsVertical onClick={() => handleOpenMenu(pack.id)} className="absolute right-1 bottom-1 px-1 text-white text-2xl bg-additional-bg/50 rounded-2xl" />
                         <img src={pack.image_url} alt={pack.pack_name} />
                     </div>
                     <p className="text-primary-text/80 font-bold">{pack.pack_name}</p>

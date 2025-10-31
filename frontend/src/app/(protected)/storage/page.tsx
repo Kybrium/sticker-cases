@@ -1,9 +1,12 @@
 'use client';
 
+import BottomActions from "@/components/storage/BottomActions";
 import SearchBar from "@/components/storage/SearchBar";
 import Stickers from "@/components/storage/Stickers";
 import StorageHeader from "@/components/storage/StorageHeader";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { AiOutlineShoppingCart } from "react-icons/ai";
+import { FaRegArrowAltCircleRight } from "react-icons/fa";
 
 const Storage: React.FC = () => {
 
@@ -26,6 +29,22 @@ const Storage: React.FC = () => {
     }
 
     const [isActionsMenuOpen, setIsActionsMenuOpen] = useState<boolean>(false);
+    const [currentlySelectedId, setCurrentlySelectedId] = useState<number | null>(null);
+
+    const handleOpenMenu: (v: number) => void = (v) => {
+        setCurrentlySelectedId(v);
+        setIsActionsMenuOpen(true);
+    }
+
+    useEffect(() => {
+        if (isActionsMenuOpen) {
+            const originalStyle = window.getComputedStyle(document.body).overflow;
+            document.body.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = originalStyle;
+            };
+        }
+    }, [isActionsMenuOpen]);
 
     return (
         <div className="min-h-screen bg-background px-4 py-2">
@@ -37,8 +56,14 @@ const Storage: React.FC = () => {
                     <button className="bg-second-background font-semibold text-white p-1 text-sm rounded-2xl w-full">Not Games <span className="bg-third-background rounded-full p-1 text-xs">0</span></button>
                 </div>
                 <SearchBar />
-                <Stickers data={data} />
             </main>
+
+            <Stickers data={data} handleOpenMenu={handleOpenMenu} />
+
+            <BottomActions open={isActionsMenuOpen} onClose={() => setIsActionsMenuOpen(false)}>
+                <button className="flex items-center gap-3 py-3 text-primary-text w-full text-left"><AiOutlineShoppingCart className="text-blue-500" /> <span>Sell Stickers</span></button>
+                <button className="flex items-center gap-3 py-3 text-primary-text w-full text-left"><FaRegArrowAltCircleRight className="text-blue-500" /> <span>Transfer stickers</span></button>
+            </BottomActions>
 
         </div>
     )
