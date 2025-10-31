@@ -1,10 +1,30 @@
 'use client';
 
 import SearchBar from "@/components/storage/SearchBar";
+import Stickers from "@/components/storage/Stickers";
 import StorageHeader from "@/components/storage/StorageHeader";
 import React from "react";
 
 const Storage: React.FC = () => {
+
+    const data: any[] = [];
+    for (let i = 0; i < 50; i++) {
+        data.push({
+            id: i,
+            pack_name: "Extra Eyes",
+            collection_name: "DOGS OG",
+            contributor: "Sticker Pack",
+            floor_price: 3.413,
+            image_url: "https://cdn.stickerdom.store/1/p/4/1.png?v=3",
+            cases: [
+                {
+                    chance: 0.9457013574660634,
+                    case_name: "Sigma Case"
+                }
+            ]
+        });
+    }
+
     return (
         <div className="min-h-screen bg-background px-4 py-2">
             <StorageHeader />
@@ -15,7 +35,10 @@ const Storage: React.FC = () => {
                     <button className="bg-second-background font-semibold text-white p-1 text-sm rounded-2xl w-full">Not Games <span className="bg-third-background rounded-full p-1 text-xs">0</span></button>
                 </div>
                 <SearchBar />
+                <Stickers data={data} />
+
             </main>
+
         </div>
     )
 }
