@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState } from "react";
 import { IoSearch } from "react-icons/io5";
 import { FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";

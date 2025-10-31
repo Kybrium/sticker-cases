@@ -1,5 +1,6 @@
 'use client';
 
+import NavBar from "@/components/global/NavBar";
 import SearchBar from "@/components/storage/SearchBar";
 import StorageHeader from "@/components/storage/StorageHeader";
 import React from "react";
@@ -15,6 +16,7 @@ const Storage: React.FC = () => {
                     <button className="bg-second-background font-semibold text-white p-1 text-sm rounded-2xl w-full">Not Games <span className="bg-third-background rounded-full p-1 text-xs">0</span></button>
                 </div>
                 <SearchBar />
+                <NavBar/>
             </main>
         </div>
     )
