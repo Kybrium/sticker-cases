@@ -17,6 +17,6 @@ class Upgrade(models.Model):
         if self.bet:
             if self.success:
                 if self.drop:
-                    return float(self.drop.floor_price - self.bet.floor_price)
-            return float(self.bet.floor_price) * -1
+                    return float(self.drop.price - self.bet.price)
+            return float(self.bet.price) * -1
         return None

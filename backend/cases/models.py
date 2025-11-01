@@ -69,7 +69,7 @@ class CaseOpen(models.Model):
     @property
     def price(self) -> float | None:
         if self.drop and self.drop.pack:
-            return float(self.drop.pack.floor_price)
+            return float(self.drop.pack.price)
         return None
 
     @property

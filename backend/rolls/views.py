@@ -5,12 +5,12 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from .serializers import RouletteSerializer
 from .models import Round, TicketUsage, NFTBet, TonBet, BaseBet
-from users.models import CustomUser, UserInventory
+from users.models import CustomUser
 from packs.serializers import RequestLiquiditySerializer
 from .tasks import finish_round_task
 from consumers import WSConsumer
 from django.db import transaction
-from packs.models import Liquidity
+from packs.models import Liquidity, UserInventory
 from asgiref.sync import async_to_sync
 
 

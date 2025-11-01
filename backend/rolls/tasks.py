@@ -91,7 +91,7 @@ async def finish_round_task(round: Round):
 
     for bet in bets:
         user_id = bet.user.telegram_id
-        value = bet.amount if isinstance(bet, TonBet) else bet.liquidity.pack.floor_price
+        value = bet.amount if isinstance(bet, TonBet) else bet.liquidity.pack.price
         storage[user_id] = storage.get(user_id, 0) + value
 
     block_hash = somefunc()
@@ -114,7 +114,7 @@ async def finish_round_task(round: Round):
         liquidity = Liquidity.objects.get(id=nft_id)
         pack_name, image_url, pack_collection, number, price = (liquidity.pack.pack_name, liquidity.pack.image_url,
                                                                 liquidity.pack.collection_name, liquidity.number,
-                                                                liquidity.pack.floor_price)
+                                                                liquidity.pack.price)
         ws_pack_winning.append({"pack_name": pack_name, "pack_image_url": image_url, "pack_collection": pack_collection,
                                 "number": number, "price": price})
 

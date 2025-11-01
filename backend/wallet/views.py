@@ -31,9 +31,10 @@ from tonsdk.utils import Address  # type: ignore
 from tonutils.client import TonapiClient
 from tonutils.wallet import WalletV5R1
 from tonutils.wallet.messages import TransferNFTMessage
-from users.models import CustomUser, UserInventory
+from users.models import CustomUser
 from users.serializers import UserSerializer
 from packs.serializers import RequestLiquiditySerializer
+from packs.models import UserInventory
 
 from .models import Deposit, Withdrawal
 from .serializers import SignatureValidationSerializer, WalletSerializer
@@ -420,7 +421,7 @@ class WalletAPIViewSet(viewsets.GenericViewSet):
 
         with transaction.atomic():
             try:
-                Withdrawal.objects.create(user=user, pack=pack, date=timezone.now(), sum=pack.floor_price)
+                Withdrawal.objects.create(user=user, pack=pack, date=timezone.now(), sum=pack.price)
                 liquidity.delete()
             except Exception as e:
                 return Response(

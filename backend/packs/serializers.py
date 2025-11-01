@@ -1,8 +1,8 @@
 from cases.serializers import CaseItemSerializer
 from rest_framework import serializers
-from users.models import CustomUser, UserInventory
+from users.models import CustomUser
 
-from .models import Liquidity, Pack
+from .models import Liquidity, Pack, UserInventory
 
 
 class PackSerializer(serializers.Serializer):
@@ -27,7 +27,7 @@ class PackSerializer(serializers.Serializer):
             "pack_name": instance.pack_name,
             "collection_name": instance.collection_name,
             "contributor": instance.contributor,
-            "floor_price": instance.floor_price,
+            "price": instance.price,
             "image_url": instance.image_url,
             "cases": CaseItemSerializer(
                 instance.cases.all(),
