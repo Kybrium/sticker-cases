@@ -17,9 +17,4 @@ from router import ws_urlpatterns
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 
-application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
-    "websocket": AuthMiddlewareStack(
-        URLRouter(ws_urlpatterns)
-    )
-})
+application = get_asgi_application()

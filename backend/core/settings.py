@@ -32,20 +32,17 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "daphne",
     "django.contrib.staticfiles",
     # Third party
     "rest_framework",
     "corsheaders",
     "drf_spectacular",
-    "channels",
     # Apps
     "cases",
     "packs",
     "users",
     "wallet",
     "upgrade",
-    "rolls"
 ]
 
 # MIDDLEWARE THE ORDER IS IMPORTANT!!!!!!!
@@ -77,9 +74,6 @@ TEMPLATES = [
         },
     },
 ]
-
-WSGI_APPLICATION = "core.wsgi.application"
-ASGI_APPLICATION = "core.asgi.application"
 
 # DB SETUP
 DATABASES = {
