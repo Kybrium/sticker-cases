@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from packs.models import Liquidity, Pack
+from packs.models import Liquidity, Pack, UserInventory
 from packs.serializers import CaseItemSerializer, PackSerializer
 from rest_framework import status as drf_status
 from rest_framework import viewsets
@@ -13,7 +13,7 @@ from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.request import Request
 from rest_framework.response import Response
-from users.models import CustomUser, UserInventory
+from users.models import CustomUser
 from users.serializers import UserSerializer
 
 from .models import Case, CaseItem, CaseOpen, CaseStatus

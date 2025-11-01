@@ -3,7 +3,7 @@ from packs.models import Liquidity
 
 def get_upgrade_liquidity(liquidity: Liquidity, fee: float = 0.2, min_multiplier: float = 1.5, x: float = 1.186,
                           limit: int = 30):
-    liqs = Liquidity.objects.filter(free=True).order_by("pack__floor_price")
+    liqs = Liquidity.objects.filter(free=True).order_by("pack__price")
     """
     ---- Конфигурация апгрейда через параметры ----
     fee = 0.20  # на сколько процентов уменьшить шанс
@@ -13,12 +13,12 @@ def get_upgrade_liquidity(liquidity: Liquidity, fee: float = 0.2, min_multiplier
     """
 
     result = []
-    base_price = float(liquidity.pack.floor_price)
+    base_price = float(liquidity.pack.price)
     current_price = base_price * min_multiplier
 
     for liq in liqs:
-        if liq.pack.floor_price >= current_price:
-            chance = (base_price / float(liq.pack.floor_price)) * (1 - fee)
+        if liq.pack.price >= current_price:
+            chance = (base_price / float(liq.pack.price)) * (1 - fee)
             chance = min(chance, 1.0)
 
             result.append((liq, chance))

@@ -3,6 +3,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from cryptography.fernet import Fernet
+
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -73,8 +75,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "core.wsgi.application"
-
 # DB SETUP
 DATABASES = {
     "default": {
@@ -117,6 +117,8 @@ USE_TZ = True
 # STATIC SETUP
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+SECRET_ENCRYPTION_KEY = Fernet.generate_key()
 
 # ============================ Cors & Rest setups =================================
 SESSION_COOKIE_NAME = "sc_sessionid"

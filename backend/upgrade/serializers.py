@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from users.models import CustomUser, UserInventory
-from packs.models import Pack, Liquidity
+from users.models import CustomUser
+from packs.models import Pack, Liquidity, UserInventory
 from shared.calculations import get_upgrade_liquidity
 
 

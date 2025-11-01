@@ -6,7 +6,8 @@ from rest_framework.response import Response
 from .models import Upgrade
 from .serializers import UpgradeLiquiditySerializer
 from packs.models import Liquidity, Pack
-from users.models import CustomUser, UserInventory
+from users.models import CustomUser
+from packs.models import UserInventory
 import random
 from packs.serializers import ResponseLiquiditySerializer, RequestLiquiditySerializer
 from shared.calculations import get_upgrade_liquidity
@@ -34,7 +35,7 @@ class UpgradeAPIViewSet(viewsets.GenericViewSet):
                 "liq_collection": liq.pack.collection_name,
                 "liq_contributor": liq.pack.contributor,
                 "liq_number": liq.number,
-                "floor_price": liq.pack.floor_price,
+                "price": liq.pack.price,
                 "image_url": liq.pack.image_url or "",
                 "chance": chance
             }

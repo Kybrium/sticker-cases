@@ -55,9 +55,9 @@ async def update_packs_prices_sticker_bot(collections: dict, client: aiohttp.Cli
             pack_name = pack_data["name"]
             collection_name = col_data["name"]
             if pack_name in pack_names and collection_name in pack_collections:
-                pack_floor_price = pack_data["current"]["price"]["floor"]["ton"]
-                if pack_floor_price:
-                    packs_to_update.append({str(collection_name): {str(pack_name): pack_floor_price}})
+                pack_price = pack_data["current"]["price"]["median"]["ton"]
+                if pack_price:
+                    packs_to_update.append({str(collection_name): {str(pack_name): pack_price}})
                 else:
                     continue
     return packs_to_update
@@ -337,7 +337,7 @@ async def calculate_cases_price() -> None:
 
             items_dict = {
                 d["pack_name"]: {
-                    "price": float(d["pack_floor_price"]),
+                    "price": float(d["pack_price"]),
                     "chance": float(d["chance"]),
                     "collection_name": d["collection_name"],
                 }

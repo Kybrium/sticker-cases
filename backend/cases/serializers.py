@@ -31,7 +31,7 @@ class CaseSerializer(serializers.Serializer):
 class CaseItemSerializer(serializers.ModelSerializer):
     pack_name = serializers.CharField(source="pack.pack_name")
     collection_name = serializers.CharField(source="pack.collection_name")
-    pack_floor_price = serializers.DecimalField(source="pack.floor_price", max_digits=20, decimal_places=3)
+    pack_price = serializers.DecimalField(source="pack.price", max_digits=20, decimal_places=3)
     pack_image = serializers.CharField(source="pack.image_url")
     chance = serializers.FloatField()
     case_name = serializers.CharField(source="case.name")
@@ -44,7 +44,7 @@ class CaseItemSerializer(serializers.ModelSerializer):
             "pack_image",
             "chance",
             "case_name",
-            "pack_floor_price",
+            "pack_price",
         ]
 
     def __init__(self, *args, **kwargs):
