@@ -2,6 +2,8 @@ from typing import Any
 
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
+from django.db.models import QuerySet
+from packs.models import Liquidity
 
 
 class CustomUser(AbstractUser):
@@ -42,3 +44,7 @@ class CustomUser(AbstractUser):
 
     def __str__(self) -> str:
         return self.username
+
+    @property
+    def get_liquidity(self) -> QuerySet[Liquidity, Liquidity]:
+        return Liquidity.objects.filter(userinventory__user=self)

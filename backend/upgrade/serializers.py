@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from users.models import CustomUser
 from packs.models import Pack, Liquidity, UserInventory
-from shared.calculations import get_upgrade_liquidity
+from shared.utils import get_upgrade_liquidity
 
 
 class UpgradeLiquiditySerializer(serializers.Serializer):

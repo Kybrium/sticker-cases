@@ -10,7 +10,7 @@ from users.models import CustomUser
 from packs.models import UserInventory
 import random
 from packs.serializers import ResponseLiquiditySerializer, RequestLiquiditySerializer
-from shared.calculations import get_upgrade_liquidity
+from shared.utils import get_upgrade_liquidity
 from django.utils import timezone
 from django.db import transaction
 

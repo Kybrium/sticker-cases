@@ -1,5 +1,4 @@
 from django.db import models
-from django.db.models import QuerySet
 from django.contrib.postgres.fields import ArrayField
 
 
@@ -60,7 +59,3 @@ class UserInventory(models.Model):
 
     user = models.ForeignKey("users.CustomUser", on_delete=models.CASCADE)
     liquidity = models.ForeignKey("packs.Liquidity", models.CASCADE, null=True, blank=True)
-
-    @property
-    def get_liquidity(self) -> QuerySet[Liquidity, Liquidity]:
-        return Liquidity.objects.filter(userinventory__user=self)
