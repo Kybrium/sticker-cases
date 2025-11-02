@@ -1,66 +1,80 @@
-import asyncio
-import os
 from typing import Any, Optional
 
-import aiohttp
+import requests
 from core.celery import celery_app
 
-BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+from django.db import transaction
+from users.models import CustomUser
+from packs.serializers import RequestLiquiditySerializer
+from packs.models import UserInventory
+from cases.models import Case, CaseStatus, CaseItem
+
+from .models import Pack
 
 
 @celery_app.task
 def update_sticker_prices_task() -> None:
-    asyncio.run(update_sticker_prices())
+    response = requests.get("https://stickers.tools/api/stats-new")
+    data = response.json()
+    sticker_pack_collections = data.get("collections")
+    update_packs_prices_sticker_pack(sticker_pack_collections)
+    calculate_cases_price()
+
+    # TODO: сюда добавлять функции для изменения цен на стикеры сторов
 
 
-async def update_sticker_prices() -> None:
-    async with aiohttp.ClientSession() as client:
-        response = await client.get("https://stickers.tools/api/stats-new")
-        data = await response.json()
-        collections = data.get("collections")
+def update_packs_prices_sticker_pack(collections: dict) -> dict:
+    packs = Pack.objects.filter(contributor="Sticker Pack").values(
+        "collection_name", "pack_name"
+    )
 
-        sticker_pack = await update_packs_prices_sticker_bot(collections, client)
+    valid_pack_names = {p["pack_name"] for p in packs}
+    valid_collections = {p["collection_name"] for p in packs}
 
-        packs_to_update: dict = dict()
+    sticker_pack_data = {}
 
-        for d in sticker_pack:
-            for collection, packs in d.items():
-                if collection not in packs_to_update:
-                    packs_to_update[collection] = {}
-                packs_to_update[collection].update(packs)
-
-        await client.patch(
-            f"{BASE_URL}/api/packs/update-stickers-price/",
-            json={"packs_data": packs_to_update},
-        )
-        await calculate_cases_price()
-
-
-async def update_packs_prices_sticker_bot(collections: dict, client: aiohttp.ClientSession) -> list:
-    """
-    Обновляет цены на стикеры из коллекций выпущенных @sticker_bot
-    :return:
-    """
-    response = await client.get(f"{BASE_URL}/api/packs/contributor/?contributor=Sticker Pack")
-
-    packs: dict = await response.json()
-    items = packs["items"]
-
-    pack_names = [p["pack_name"] for p in items]
-    pack_collections = [c["collection_name"] for c in items]
-
-    packs_to_update = []
     for col_data in collections.values():
-        for pack_data in col_data["stickers"].values():
+        collection_name = col_data["name"]
+
+        if collection_name not in valid_collections:
+            continue
+
+        for pack_data in col_data.get("stickers", {}).values():
             pack_name = pack_data["name"]
-            collection_name = col_data["name"]
-            if pack_name in pack_names and collection_name in pack_collections:
-                pack_price = pack_data["current"]["price"]["median"]["ton"]
-                if pack_price:
-                    packs_to_update.append({str(collection_name): {str(pack_name): pack_price}})
-                else:
-                    continue
-    return packs_to_update
+            if pack_name not in valid_pack_names:
+                continue
+
+            price = (
+                pack_data.get("current", {})
+                .get("price", {})
+                .get("median", {})
+                .get("ton")
+            )
+
+            if not price:
+                continue
+
+            sticker_pack_data.setdefault(collection_name, {})[pack_name] = price
+
+            packs_to_update = []
+            try:
+                with transaction.atomic():
+                    for collection, packs in sticker_pack_data.items():
+                        for pack_name, price in packs.items():
+                            try:
+                                obj = Pack.objects.get(
+                                    collection_name=collection,
+                                    pack_name=pack_name
+                                )
+                                obj.price = price
+                                packs_to_update.append(obj)
+                            except Pack.DoesNotExist:
+                                continue
+
+                    if packs_to_update:
+                        Pack.objects.bulk_update(packs_to_update, ["price"])
+            except Exception as e:
+                print(f"Ошибка обновления Sticker Pack: {e}")
 
 
 """
@@ -72,7 +86,7 @@ async def update_packs_prices_sticker_bot(collections: dict, client: aiohttp.Cli
 """
 
 
-async def adjust_case_price(items_dict: dict, base_fee: float, percent: int = 5) -> tuple[float, float]:
+def adjust_case_price(items_dict: dict, base_fee: float, percent: int = 5) -> tuple[float, float]:
     EV = sum(v["price"] * v["chance"] for v in items_dict.values())
     min_fee = base_fee - base_fee * percent / 100
     max_fee = base_fee + base_fee * percent / 100
@@ -153,14 +167,14 @@ def _rebalance_probs_greedy(  # noqa: C901
     return p, ev
 
 
-async def rebalance_chances(  # noqa: C901
+def rebalance_chances(  # noqa: C901
         items: dict[str, dict[str, Any]],
         case_price: float,
         base_fee: float,
         case_name: str,
         percent: int = 5,
         max_iter: int = 100,
-) -> tuple[dict[str, list[dict[str, Any]]], dict[str, dict[str, float]]]:  # noqa: C901
+):
     """
     Распределение шансов с категориями и контролем EV/фи.
     Поддерживаются несколько cheap и expensive паков.
@@ -282,83 +296,96 @@ async def rebalance_chances(  # noqa: C901
         case_price = round((case_price_min + case_price_max) / 2 * 2) / 2
 
     # --- Обновление шансов и цены в БД ---
-    chances_to_update: dict = {}
-    for i, n in enumerate(names):  # type: ignore[assignment]
-        items[n]["chance"] = chances_list[i]  # type: ignore[index]
-        # создаём список паков для каждого кейса
-        chances_to_update.setdefault(str(case_name), [])
-        chances_to_update[str(case_name)].append(
-            {
-                "pack_name": str(n),
-                "collection_name": str(items[n]["collection_name"]),  # type: ignore[index]
-                "chance": chances_list[i],
-            }
-        )
+    updated_items: list[CaseItem] = []
+
+    for i, n in enumerate(names):
+        chance_value = chances_list[i]
+        collection_name = items[n]["collection_name"]  # берем из словаря
+        try:
+            case_item = CaseItem.objects.get(
+                case__name=case_name,
+                pack__pack_name=n,
+                pack__collection_name=collection_name,
+            )
+            case_item.chance = chance_value
+            updated_items.append(case_item)
+        except CaseItem.DoesNotExist:
+            continue
+        except CaseItem.MultipleObjectsReturned:
+            case_item = (
+                CaseItem.objects.filter(
+                    case__name=case_name,
+                    pack__pack_name=n,
+                    pack__collection_name=collection_name,
+                ).first()
+            )
+            if case_item:
+                case_item.chance = chance_value
+                updated_items.append(case_item)
+
+    case = Case.objects.get(name=case_name)
+    case.price = case_price
+    case.current_fee = new_fee
 
     print(
-        f"[rebalance] Кейc {case_name}: финальные шансы = {[(n, round(items[n]['chance'], 4)) for n in names]}, "
+        f"[rebalance] Кейc {case_name}: финальные шансы = "
+        f"{[(n, round(items[n]['chance'], 4)) for n in names]}, "
         f"fee = {new_fee:.2f}%, цена = {case_price:.2f}"
     )
-    return chances_to_update, {str(case_name): {"price": case_price, "fee": new_fee}}
+
+    return updated_items, [case]
 
 
-async def check_new_fee(new_fee: float, base_fee: float = 20, percent: int = 5) -> bool:
+def check_new_fee(new_fee: float, base_fee: float = 20, percent: int = 5) -> bool:
     tolerance = base_fee * percent / 100
     low = base_fee - tolerance
     high = base_fee + tolerance
     return low <= new_fee <= high
 
 
-async def calculate_cases_price() -> None:
-    async with aiohttp.ClientSession() as client:
-        response = await client.get(f"{BASE_URL}/api/cases/")
+def calculate_cases_price() -> None:
+    cases = Case.objects.filter(status=CaseStatus.ACTIVE)
 
-        if response.status == 404:
-            print("Нету доступных кейсов")
-            return
+    chances_to_update: list[CaseItem] = []
+    cases_to_update: list[Case] = []
 
-        if response.status == 500:
-            print("API лег с 500")
-            return
+    for case in cases:
+        case_price = float(case.price)
+        case_base_fee = float(case.base_fee)
 
-        cases_response = await response.json()
-        cases = cases_response.get("items", [])
+        items = CaseItem.objects.filter(case=case)
 
-        chances_to_update: dict = {}
-        cases_to_update: dict = {}
-        for case in cases:
-            case_price = float(case.get("price"))
-            case_name = case.get("name")
-            case_base_fee = float(case.get("base_fee"))
-
-            response = await client.get(f"{BASE_URL}/api/cases/{case_name}/items/")
-            case_response = await response.json()
-            items = case_response.get("items", [])
-
-            items_dict = {
-                d["pack_name"]: {
-                    "price": float(d["pack_price"]),
-                    "chance": float(d["chance"]),
-                    "collection_name": d["collection_name"],
-                }
-                for d in items
+        items_dict = {
+            item.pack.pack_name: {
+                "price": float(item.pack.price),
+                "chance": float(item.chance),
+                "collection_name": item.pack.collection_name,
             }
+            for item in items
+        }
 
-            EV = sum(v["price"] * v["chance"] for v in items_dict.values())
-            current_fee = (case_price - EV) / case_price * 100
+        EV = sum(v["price"] * v["chance"] for v in items_dict.values())
+        current_fee = (case_price - EV) / case_price * 100
 
-            valid = await check_new_fee(current_fee, base_fee=case_base_fee)
-            if valid:
-                if case_name not in cases_to_update:
-                    cases_to_update[case_name] = {}
-                cases_to_update[case_name] = {"fee": current_fee}
-            else:
-                chance_updates, case_updates = await rebalance_chances(items_dict, case_price, case_base_fee, case_name)
+        valid = check_new_fee(current_fee, base_fee=case_base_fee)
+        if valid:
+            case.current_fee = current_fee
+            cases_to_update.append(case)
+        else:
+            updated_items, updated_cases = rebalance_chances(
+                items_dict, case_price, case_base_fee, case.name
+            )
 
-                chances_to_update.update(chance_updates)
-                cases_to_update.update(case_updates)
+            chances_to_update.extend(updated_items)
+            cases_to_update.extend(updated_cases)
 
-                print(f"{case_name}: фи был невалиден, новые шансы будут подобраны")
+            print(f"{case.name}: фи был невалиден, новые шансы будут подобраны")
 
-        await client.patch(f"{BASE_URL}/api/cases/update-cases/", json={"data": cases_to_update})
-        await client.patch(f"{BASE_URL}/api/cases/update-chances/", json={"data": chances_to_update})
+        try:
+            with transaction.atomic():
+                if cases_to_update:
+                    Case.objects.bulk_update(cases_to_update, ["current_fee", "price"])
+                if chances_to_update:
+                    CaseItem.objects.bulk_update(chances_to_update, ["chance"])
+        except Exception as e:
+            print(f"Ошибка при обновлении: {e}")

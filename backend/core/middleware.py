@@ -10,6 +10,17 @@ BOT_API_TOKEN = os.getenv("BOT_API_TOKEN", "plug")
 
 class TelegramAuthMiddleware(MiddlewareMixin):
     def process_request(self, request):
+
+        EXCLUDED_PATHS = [
+            "/healthz/",
+            "/admin/",
+            "/api/schema/",
+            "/webhook/"
+        ]
+
+        if any(request.path.startswith(p) for p in EXCLUDED_PATHS):
+            return  # пропускаем проверку, ничего не делаем
+
         init_data = request.headers.get("X-Telegram-Init-Data")
         if not init_data:
             return JsonResponse({"status": "error", "message": "Заголовок 'X-Telegram-Init-Data' обязателен"},

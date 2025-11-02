@@ -75,45 +75,6 @@ class PackAPIViewSet(viewsets.GenericViewSet):
             status=drf_status.HTTP_200_OK,
         )
 
-    @action(detail=False, methods=["patch"], url_path="update-stickers-price")
-    def update_stickers_price(self, request: Request) -> Response:
-        data = request.data.get("packs_data")
-
-        if not data or not isinstance(data, dict):
-            return Response(
-                {
-                    "status": "error",
-                    "message": "Поле 'packs_data' обязательно и должно быть словарём",
-                },
-                status=drf_status.HTTP_400_BAD_REQUEST,
-            )
-
-        packs_to_update = []
-        try:
-            with transaction.atomic():
-                for collection, pack in data.items():
-                    for pack_name, price in pack.items():
-                        try:
-                            obj = Pack.objects.get(collection_name=collection, pack_name=pack_name)
-                            obj.price = price
-                            packs_to_update.append(obj)
-                        except Pack.DoesNotExist:
-                            continue
-
-                if packs_to_update:
-                    Pack.objects.bulk_update(packs_to_update, ["price"])
-
-        except Exception as e:
-            return Response(
-                {"status": "error", "message": f"Ошибка обновления: {str(e)}"},
-                status=drf_status.HTTP_400_BAD_REQUEST,
-            )
-
-        return Response(
-            {"status": "success", "updated": len(packs_to_update)},
-            status=drf_status.HTTP_200_OK,
-        )
-
     @action(detail=False, methods=["POST"], url_path="sell")
     def sell_liquidity(self, request: Request) -> Response:  # noqa: C901
 
