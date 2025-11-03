@@ -136,71 +136,6 @@ GET: Если не отправлять `"telegram_id"` будет демо от
 - `image_url` фотка пака
 - `drop_number` число пака, нужно для определения в закупленной ликвидности
 
-4. **PATCH /api/cases/update-chances/**
-
-**Эндпоинт не используется для фронтенда!**
-
-***Request:***
-
-````
-{
-  "data": {
-    "DOGS OG Case": [
-      {"pack_name": "Cook", "collection_name": "DOGS OG", "chance": 0.047814798788403286},
-      {"pack_name": "Teletubby", "collection_name": "DOGS OG", "chance": 0.9043704024231934},
-      {"pack_name": "Pilot", "collection_name": "DOGS OG", "chance": 0.047814798788403286}
-    ]
-  }
-}
-````
-
-***Response:***
-
-````
-{
-  "info": 3
-}
-````
-
-Обновляет шанс на выпадение пака в определенном кейсе:
-
-- `chance` новый шанс на выпадение
-- `collection_name` коллекция стикерпака
-
-
-5. **PATCH /api/cases/update-cases/** \
-
-**Эндпоинт не используется для фронтенда!**
-
-***Request:***
-
-````
-{
-  "data": {
-    "Blum Case": 
-      {"fee": 20.852280967709124}
-    ,
-    "DOGS OG Case": 
-      {"price": 3.0, "fee": 19.999999999999986}
-    ,
-    "DOGS Rewards Case": 
-      {"fee": 19.800141337436568}
-    
-  }
-}
-````
-
-***Response:***
-
-````
-{
-  "info": 3
-}
-````
-
-Обновляет текущий фи и цену кейсов.
-****
-
 ### packs
 
 1. **GET /api/packs/** \
@@ -315,26 +250,6 @@ GET: Если не отправлять `"telegram_id"` будет демо от
 
 Фильтрует все паки по контрибьютору, например Sticker Pack \
 Подключен кэш
-
-3. **PATCH /api/packs/update-stickers-price/**
-
-**Эндпоинт не используется для фронтенда!**
-
-***Request:***
-
-````
-{"packs_data": {"DOGS OG": {"Cook": 5.969}}}
-````
-
-***Response:***
-
-````
-{
-  "info": 1
-}
-````
-
-Обновляет цены на стикеры
 
 ****
 

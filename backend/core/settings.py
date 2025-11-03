@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+from datetime import timedelta
+
+from cryptography.fernet import Fernet
 
 load_dotenv()
 
@@ -51,6 +54,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.middleware.TelegramAuthMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -72,8 +76,6 @@ TEMPLATES = [
         },
     },
 ]
-
-WSGI_APPLICATION = "core.wsgi.application"
 
 # DB SETUP
 DATABASES = {
@@ -118,6 +120,8 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+SECRET_ENCRYPTION_KEY = Fernet.generate_key()
+
 # ============================ Cors & Rest setups =================================
 SESSION_COOKIE_NAME = "sc_sessionid"
 SESSION_COOKIE_SAMESITE = "Lax"  # or "None" if we use a different site/port and HTTPS
@@ -125,7 +129,7 @@ SESSION_COOKIE_SECURE = False  # True in production (HTTPS)
 CSRF_COOKIE_SECURE = False  # True in production (HTTPS)
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],

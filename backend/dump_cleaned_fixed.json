@@ -1,0 +1,547 @@
+[
+  {
+    "model": "cases.case",
+    "pk": 1,
+    "fields": {
+      "name": "Sigma Case",
+      "price": "90.500",
+      "current_fee": 19.58228694282642,
+      "base_fee": 20.0,
+      "status": "active",
+      "image_url": "https://stickercasebucket.s3.eu-north-1.amazonaws.com/cases/plug.png"
+    }
+  },
+  {
+    "model": "cases.caseitem",
+    "pk": 1,
+    "fields": {
+      "case": 1,
+      "pack": 1,
+      "chance": 0.0025
+    }
+  },
+  {
+    "model": "cases.caseitem",
+    "pk": 2,
+    "fields": {
+      "case": 1,
+      "pack": 2,
+      "chance": 0.051798642533936665
+    }
+  },
+  {
+    "model": "cases.caseitem",
+    "pk": 4,
+    "fields": {
+      "case": 1,
+      "pack": 4,
+      "chance": 0.9457013574660634
+    }
+  },
+  {
+    "model": "cases.caseopen",
+    "pk": 12,
+    "fields": {
+      "case": 1,
+      "user": 6,
+      "drop": 3,
+      "date": "2025-10-11T13:29:35Z"
+    }
+  },
+  {
+    "model": "cases.caseopen",
+    "pk": 13,
+    "fields": {
+      "case": 1,
+      "user": 6,
+      "drop": 15,
+      "date": "2025-10-11T17:27:50.634Z"
+    }
+  },
+  {
+    "model": "cases.caseopen",
+    "pk": 14,
+    "fields": {
+      "case": 1,
+      "user": 6,
+      "drop": 15,
+      "date": "2025-10-12T10:32:15.585Z"
+    }
+  },
+  {
+    "model": "cases.caseopen",
+    "pk": 15,
+    "fields": {
+      "case": 1,
+      "user": 6,
+      "drop": 19,
+      "date": "2025-10-12T10:41:16.473Z"
+    }
+  },
+  {
+    "model": "packs.pack",
+    "pk": 1,
+    "fields": {
+      "pack_name": "Gold bone",
+      "collection_name": "DOGS Rewards",
+      "contributor": "Sticker Pack",
+      "price": "18900.000",
+      "image_url": []
+    }
+  },
+  {
+    "model": "packs.pack",
+    "pk": 2,
+    "fields": {
+      "pack_name": "Not Cap",
+      "collection_name": "DOGS OG",
+      "contributor": "Sticker Pack",
+      "price": "430.520",
+      "image_url": []
+    }
+  },
+  {
+    "model": "packs.pack",
+    "pk": 3,
+    "fields": {
+      "pack_name": "Pixioznik",
+      "collection_name": "Not Pixel",
+      "contributor": "Sticker Pack",
+      "price": "1.702",
+      "image_url": []
+    }
+  },
+  {
+    "model": "packs.pack",
+    "pk": 4,
+    "fields": {
+      "pack_name": "Extra Eyes",
+      "collection_name": "DOGS OG",
+      "contributor": "Sticker Pack",
+      "price": "3.413",
+      "image_url": []
+    }
+  },
+  {
+    "model": "packs.pack",
+    "pk": 5,
+    "fields": {
+      "pack_name": "King",
+      "collection_name": "DOGS OG",
+      "contributor": "Sticker Pack",
+      "price": "13.300",
+      "image_url": []
+    }
+  },
+  {
+    "model": "packs.pack",
+    "pk": 6,
+    "fields": {
+      "pack_name": "Sheikh",
+      "collection_name": "DOGS OG",
+      "contributor": "Sticker Pack",
+      "price": "121.560",
+      "image_url": []
+    }
+  },
+  {
+    "model": "packs.pack",
+    "pk": 7,
+    "fields": {
+      "pack_name": "Classic Pengu",
+      "collection_name": "Pudgy Penguins",
+      "contributor": "Sticker Pack",
+      "price": "15.300",
+      "image_url": []
+    }
+  },
+  {
+    "model": "packs.pack",
+    "pk": 8,
+    "fields": {
+      "pack_name": "Pixioznik",
+      "collection_name": "Not Pixel",
+      "contributor": "Sticker Pack",
+      "price": "5.000",
+      "image_url": []
+    }
+  },
+  {
+    "model": "packs.liquidity",
+    "pk": 2,
+    "fields": {
+      "pack": 2,
+      "number": 312,
+      "nft_address": "assaddsdsadsasdads",
+      "link": "https://getgems.io/",
+      "free": true
+    }
+  },
+  {
+    "model": "packs.liquidity",
+    "pk": 3,
+    "fields": {
+      "pack": 1,
+      "number": 31232,
+      "nft_address": "saddasadsds",
+      "link": "https://getgems.io/",
+      "free": true
+    }
+  },
+  {
+    "model": "packs.liquidity",
+    "pk": 14,
+    "fields": {
+      "pack": 8,
+      "number": 213,
+      "nft_address": "sadsdasda",
+      "link": "https://getgems.io/",
+      "free": true
+    }
+  },
+  {
+    "model": "packs.liquidity",
+    "pk": 15,
+    "fields": {
+      "pack": 4,
+      "number": 111,
+      "nft_address": "dfrrwsdfa",
+      "link": "https://getgems.io/",
+      "free": false
+    }
+  },
+  {
+    "model": "packs.liquidity",
+    "pk": 16,
+    "fields": {
+      "pack": 7,
+      "number": 655,
+      "nft_address": "wqdsadadads",
+      "link": "https://getgems.io/",
+      "free": true
+    }
+  },
+  {
+    "model": "packs.liquidity",
+    "pk": 17,
+    "fields": {
+      "pack": 5,
+      "number": 3213223,
+      "nft_address": "wdadaw",
+      "link": "https://getgems.io/",
+      "free": true
+    }
+  },
+  {
+    "model": "packs.liquidity",
+    "pk": 18,
+    "fields": {
+      "pack": 6,
+      "number": 123,
+      "nft_address": "dasadssad",
+      "link": "https://getgems.io/",
+      "free": true
+    }
+  },
+  {
+    "model": "packs.liquidity",
+    "pk": 19,
+    "fields": {
+      "pack": 4,
+      "number": 654,
+      "nft_address": "sdadasds",
+      "link": "https://getgems.io/",
+      "free": false
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 1,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:25:55.021Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 2,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:01.474Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 3,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:02.662Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 4,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:03.145Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 5,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:03.343Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 6,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:03.674Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 7,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:13.719Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 8,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:14.253Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 9,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:14.385Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 10,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:14.546Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 11,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:32.077Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 12,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:32.214Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 13,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:32.380Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 14,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:32.514Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 15,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:32.791Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 16,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:48.291Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 17,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:48.902Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 18,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:49.290Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 19,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:49.479Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 20,
+    "fields": {
+      "liquidity": 17,
+      "user": 6,
+      "date": "2025-10-11T14:26:49.688Z"
+    }
+  },
+  {
+    "model": "packs.packsell",
+    "pk": 21,
+    "fields": {
+      "liquidity": 15,
+      "user": 6,
+      "date": "2025-10-11T17:29:25.979Z"
+    }
+  },
+  {
+    "model": "users.customuser",
+    "pk": 3,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$aYZAgEdmkRSu5akD3J08CU$uzSztVyuFOlcaFX/N17UTuOtPCEHgsTxVdvTnz2lfD0=",
+      "last_login": "2025-10-09T12:16:56.447Z",
+      "is_superuser": true,
+      "email": "admin@admin.com",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2025-10-08T19:15:48.194Z",
+      "username": "admin",
+      "last_name": [],
+      "first_name": [],
+      "telegram_id": null,
+      "language": null,
+      "is_bot": false,
+      "balance": "0.000",
+      "wallet": null,
+      "wallet_connection_date": null,
+      "tickets": 0,
+      "image_url": "https://stickercasebucket.s3.eu-north-1.amazonaws.com/users/plug.png",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "users.customuser",
+    "pk": 6,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$LgIMFJI4f3DFy4ULxhWhAS$Tr1P71Ph2cMsFBZbQMPsL4O8pSDSilRXarEWhkpTM2o=",
+      "last_login": null,
+      "is_superuser": false,
+      "email": [],
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2025-10-08T20:05:30Z",
+      "username": "vvalera808",
+      "last_name": null,
+      "first_name": "Валера",
+      "telegram_id": 1380639458,
+      "language": "en",
+      "is_bot": false,
+      "balance": "2312221.500",
+      "wallet": [],
+      "wallet_connection_date": null,
+      "tickets": 0,
+      "image_url": "https://stickercasebucket.s3.eu-north-1.amazonaws.com/users/users/1380639458.jpg",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "packs.userinventory",
+    "pk": 17,
+    "fields": {
+      "user": 6,
+      "liquidity": 15
+    }
+  },
+  {
+    "model": "packs.userinventory",
+    "pk": 18,
+    "fields": {
+      "user": 6,
+      "liquidity": 19
+    }
+  },
+  {
+    "model": "upgrade.upgrade",
+    "pk": 1,
+    "fields": {
+      "user": 6,
+      "bet": 6,
+      "success": false,
+      "drop": 2,
+      "date": "2025-10-11T13:16:08.866Z"
+    }
+  },
+  {
+    "model": "upgrade.upgrade",
+    "pk": 2,
+    "fields": {
+      "user": 6,
+      "bet": 6,
+      "success": true,
+      "drop": 2,
+      "date": "2025-10-11T13:19:50.207Z"
+    }
+  },
+  {
+    "model": "upgrade.upgrade",
+    "pk": 3,
+    "fields": {
+      "user": 6,
+      "bet": 6,
+      "success": false,
+      "drop": 2,
+      "date": "2025-10-11T13:24:51.148Z"
+    }
+  }
+]

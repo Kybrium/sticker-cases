@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 
 
 class Pack(models.Model):
@@ -8,10 +9,11 @@ class Pack(models.Model):
     pack_name = models.CharField(max_length=255)
     collection_name = models.CharField(max_length=255)
     contributor = models.CharField(max_length=255)
-    floor_price = models.DecimalField(max_digits=20, decimal_places=3)
-    image_url = models.URLField(
-        max_length=500,
-        default="https://stickercasebucket.s3.eu-north-1.amazonaws.com/packs/plug.png"
+    price = models.DecimalField(max_digits=20, decimal_places=3)
+    image_url = ArrayField(
+        models.URLField(max_length=500),
+        blank=True,
+        default=list
     )
 
     def __str__(self) -> str:
@@ -47,5 +49,13 @@ class PackSell(models.Model):
     @property
     def price(self) -> float | None:
         if self.liquidity and self.liquidity.pack:
-            return float(self.liquidity.pack.floor_price)
+            return float(self.liquidity.pack.price)
         return None
+
+
+class UserInventory(models.Model):
+    class Meta:
+        db_table = "UserInventory"
+
+    user = models.ForeignKey("users.CustomUser", on_delete=models.CASCADE)
+    liquidity = models.ForeignKey("packs.Liquidity", models.CASCADE, null=True, blank=True)

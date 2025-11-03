@@ -21,34 +21,6 @@ class UserAPIViewSet(viewsets.GenericViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
 
-    @action(detail=False, methods=["POST"], url_path="(?P<telegram_id>[^/.]+)/create")
-    def create_user(self, request: Request, telegram_id: str | None = None) -> Response:
-
-        try:
-            user = CustomUser.objects.get(telegram_id=telegram_id)
-            if user:
-                return Response({"status": "error", "message": "Пользователь уже был создан"}, drf_status.HTTP_200_OK)
-        except Exception:
-            pass
-
-        first_name = request.data.get("first_name")
-        last_name = request.data.get("last_name")
-        username = request.data.get("username")
-        language = request.data.get("language")
-        is_bot = request.data.get("is_bot")
-        image_url = request.data.get("image_url")
-
-        try:
-            CustomUser.objects.create_user(telegram_id=telegram_id, username=username, first_name=first_name,
-                                           last_name=last_name, language=language, is_bot=is_bot,
-                                           password="plug", image_url=image_url)
-        except Exception as e:
-            print("Ошибка при создании пользователя", e)
-            return Response({"status": "error", "message": f"Ошибка при создании пользователя: {e}"},
-                            drf_status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return Response({"status": "success", "message": "Новый пользователь создан"}, drf_status.HTTP_200_OK)
-
     @action(detail=False, methods=["GET"], url_path="(?P<telegram_id>[^/.]+)")
     def get_user(self, request: Request, telegram_id: int | None) -> Response:
         serializer = UserSerializer(data={"telegram_id": telegram_id})
